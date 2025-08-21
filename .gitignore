@@ -1,0 +1,61 @@
+# ==============================
+# Java / Spring Boot
+# ==============================
+/target/
+/build/
+out/
+/bin/
+/.gradle/
+/.mvn/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Spring Boot logs
+*.log
+
+# Local application configs
+application-*.yml
+application-*.yaml
+application-*.properties
+*.iml
+
+# ==============================
+# Node / React frontend
+# ==============================
+/reactapp/node_modules/
+/reactapp/build/
+/reactapp/.next/
+/reactapp/dist/
+
+# lock files (optional, if you prefer reproducible installs, keep them)
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# dotenv
+.env
+.env.local
+.env.*.local
+
+# ==============================
+# IDE / Editors
+# ==============================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+.DS_Store
+Thumbs.db
+
+# ==============================
+# OS files
+# ==============================
+ehthumbs.db
+desktop.ini
+
+# ==============================
+# Test / Coverage
+# ==============================
+/coverage/
+/test-output/
+/jacoco.exec
