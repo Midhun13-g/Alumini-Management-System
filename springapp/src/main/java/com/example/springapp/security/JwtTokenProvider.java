@@ -20,7 +20,7 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
     }
 
-    public String generateToken(Long userId, String email, String userType) {
+    public String generateToken(Long userId, String email, String userType, String role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + JWT_EXPIRATION_MS);
 
@@ -30,7 +30,8 @@ public class JwtTokenProvider {
                 .setExpiration(expiry)
                 .addClaims(Map.of(
                         "userId", userId,
-                        "userType", userType
+                        "userType", userType,
+                        "role", role
                 ))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

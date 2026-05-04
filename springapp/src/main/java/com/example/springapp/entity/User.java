@@ -31,4 +31,7 @@ public class User {
 
     @Column(name = "is_active")  // Defaults to true, indicates if account is active
     private boolean isActive = true;
+
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'USER'")
+    private String role = "USER"; // ADMIN or USER
 }

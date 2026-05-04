@@ -41,4 +41,5 @@ public interface ConnectRepository extends JpaRepository<ConnectEntity, Long> {
 
     List<ConnectEntity> findByReceiver_IdAndStatus(Long receiverId, Status status);
     List<ConnectEntity> findBySender_IdAndStatus(Long senderId, Status status);
+    List<ConnectEntity> findBySender_IdOrReceiver_Id(Long senderId, Long receiverId);
 }

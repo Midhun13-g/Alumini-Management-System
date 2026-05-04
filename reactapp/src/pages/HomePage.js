@@ -1,345 +1,33 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import {
-  Box,
-  TextField,
-  InputAdornment,
-  Avatar,
-  Button,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  styled,
-  alpha,
-  CircularProgress,
-  Divider,
+  Box, TextField, InputAdornment, Avatar, Button, Typography,
+  List, ListItem, ListItemText, Dialog, DialogTitle, DialogContent,
+  IconButton, Chip, CircularProgress, Divider, Skeleton,
 } from "@mui/material";
 import {
-  Search as SearchIcon,
-  Person as PersonIcon,
-  ArrowBack as ArrowBackIcon,
-  Message as MessageIcon,
-  School as SchoolIcon,
+  Search as SearchIcon, Person as PersonIcon, ArrowBack as ArrowBackIcon,
+  Chat as MessageIcon, School as SchoolIcon, Psychology as MentorIcon,
+  Verified as VerifiedIcon, Close as CloseIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import MessagePage from "./MessagePage";
 import { motion, AnimatePresence } from "framer-motion";
+import { mentorshipAPI } from "../services/api";
+import AppSidebar from "../components/AppSidebar";
+import { T, glass, pageVariants, listVariants, itemVariants } from "../theme";
 
-// --- Updated Color Palette ---
-const colors = {
-  primary: "#032e74ff", // Dark slate for primary elements
-  primaryLight: "#4d8ed4ff", // Light slate for secondary elements
-  secondary: "#f5f7faff", // Light neutral for backgrounds
-  accent: "#00d4b8ff", // Vibrant teal for highlights
-  accentLight: "#e6fffcff", // Light teal for hover states
-  success: "#22c55eff", // Green for success states
-  warning: "#f59e0bff", // Amber for warnings
-  muted: "#a1bfe8ff", // Softer slate for secondary text
-  white: "#ffffff",
-  lightGray: "#e2e8f0ff", // Light gray for subtle backgrounds
-  shadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-  shadowHover: "0 6px 24px rgba(0, 0, 0, 0.12)",
-  gradientBg: "linear-gradient(180deg, #f5f7faff, #e2e8f0ff)",
-  welcomeGradient: "linear-gradient(135deg, rgba(42, 45, 50, 0.7), rgba(133, 148, 164, 0.3))",
-};
+const avatarColors = [
+  "linear-gradient(135deg,#1e3a8a,#2563EB)",
+  "linear-gradient(135deg,#065f46,#10B981)",
+  "linear-gradient(135deg,#7c2d12,#F5A623)",
+  "linear-gradient(135deg,#4c1d95,#8B5CF6)",
+  "linear-gradient(135deg,#831843,#EC4899)",
+];
+const getAvatarGradient = (name = "") =>
+  avatarColors[(name.charCodeAt(0) || 0) % avatarColors.length];
 
-// --- Modern Styled Components ---
-const Container = styled(Box)({
-  display: "flex",
-  height: "100vh",
-  backgroundColor: colors.white,
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-});
-
-const Sidebar = styled(Box)({
-  width: 80,
-  background: colors.primary,
-  color: colors.white,
-  height: "100vh",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  paddingTop: "24px",
-  position: "fixed",
-  top: 0,
-  left: 0,
-  boxShadow: colors.shadow,
-  transition: "all 0.3s ease",
-});
-
-const MainContent = styled(Box)({
-  flex: 1,
-  display: "flex",
-  marginLeft: 80,
-  overflow: "hidden",
-  background: colors.secondary,
-});
-
-const ChatList = styled(Box)({
-  width: 380,
-  background: colors.white,
-  borderRight: `1px solid ${alpha(colors.muted, 0.15)}`,
-  height: "100vh",
-  overflowY: "auto",
-  padding: "12px 0",
-  position: "relative",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-});
-
-const ChatArea = styled(motion.div)({
-  flex: 1,
-  height: "100vh",
-  background: colors.gradientBg,
-});
-
-const WelcomeSection = styled(motion.div)({
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundImage: `url(/background.png)`,
-  backgroundSize: "cover",
-  backgroundPosition: "center",
-  color: colors.white,
-  padding: "40px",
-  gap: "20px",
-  position: "relative",
-  "&:before": {
-    content: '""',
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: colors.welcomeGradient,
-    zIndex: 1,
-  },
-  "& > *": {
-    position: "relative",
-    zIndex: 2,
-    textAlign: "left",
-    maxWidth: 600,
-    width: "100%",
-  },
-});
-
-const SearchField = styled(TextField)({
-  width: "calc(100% - 24px)",
-  margin: "12px",
-  "& .MuiOutlinedInput-root": {
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    "& fieldset": {
-      border: `1px solid ${alpha(colors.muted, 0.2)}`,
-    },
-    "&:hover": {
-      backgroundColor: alpha(colors.lightGray, 0.3),
-    },
-    "&.Mui-focused": {
-      backgroundColor: colors.white,
-      "& fieldset": {
-        borderColor: colors.accent,
-      },
-    },
-  },
-  "& .MuiInputBase-input": {
-    padding: "10px 14px",
-    fontFamily: "'Inter', 'Poppins', sans-serif",
-    fontWeight: 400,
-    color: colors.primary,
-  },
-});
-
-const SearchResultsContainer = styled(motion.div)({
-  position: "absolute",
-  top: "64px",
-  left: "12px",
-  right: "12px",
-  zIndex: 10,
-  backgroundColor: colors.white,
-  borderRadius: 12,
-  boxShadow: colors.shadowHover,
-  maxHeight: "calc(100vh - 120px)",
-  overflowY: "auto",
-  padding: "12px",
-});
-
-const ResultItem = styled(ListItem)({
-  cursor: "pointer",
-  borderRadius: 10,
-  margin: "6px 0",
-  backgroundColor: colors.white,
-  transition: "all 0.2s ease",
-  padding: "10px 12px",
-  "&:hover": {
-    backgroundColor: alpha(colors.accentLight, 0.2),
-    transform: "translateY(-2px)",
-  },
-});
-
-const ConnectionCard = styled(Box)({
-  padding: "10px 14px",
-  margin: "6px 12px",
-  borderRadius: 10,
-  backgroundColor: colors.white,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  transition: "all 0.2s ease",
-  boxShadow: colors.shadow,
-  "&:hover": {
-    backgroundColor: alpha(colors.accentLight, 0.1),
-    transform: "translateY(-2px)",
-  },
-  gap: "12px", // Add spacing between elements
-  flexWrap: "nowrap", // Prevent wrapping to keep layout consistent
-});
-
-const ProfileButton = styled(IconButton)({
-  width: 52,
-  height: 52,
-  borderRadius: "50%",
-  backgroundColor: alpha(colors.white, 0.15),
-  color: colors.white,
-  marginBottom: "12px",
-  transition: "all 0.3s ease",
-  "&:hover": {
-    backgroundColor: alpha(colors.accent, 0.2),
-    transform: "scale(1.05)",
-  },
-});
-
-const ConnectButton = styled(Button)({
-  background: colors.accent,
-  color: colors.white,
-  borderRadius: 16,
-  padding: "6px 16px",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  "&:hover": {
-    backgroundColor: alpha(colors.accent, 0.9),
-    boxShadow: colors.shadow,
-  },
-});
-
-const MessageButton = styled(Button)({
-  background: colors.primaryLight,
-  color: colors.white,
-  borderRadius: 16,
-  padding: "6px 16px",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  width: "120px", // Fixed width for consistency
-  flexShrink: 0, // Prevent shrinking
-  "&:hover": {
-    backgroundColor: alpha(colors.primaryLight, 0.9),
-    boxShadow: colors.shadow,
-  },
-});
-
-const StatusButton = styled(Button)({
-  borderRadius: 12,
-  padding: "4px 10px",
-  fontSize: "0.75rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-});
-
-const PendingButton = styled(StatusButton)({
-  backgroundColor: alpha(colors.warning, 0.1),
-  color: colors.warning,
-  "&:hover": {
-    backgroundColor: alpha(colors.warning, 0.2),
-  },
-});
-
-const ConnectedButton = styled(StatusButton)({
-  backgroundColor: alpha(colors.success, 0.1),
-  color: colors.success,
-  "&:hover": {
-    backgroundColor: alpha(colors.success, 0.2),
-  },
-});
-
-const SectionTitle = styled(Typography)({
-  color: colors.primary,
-  fontWeight: 600,
-  fontSize: "1.1rem",
-  margin: "12px",
-  padding: "0 12px",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-});
-
-const GradientAvatar = styled(Avatar)({
-  background: `linear-gradient(45deg, ${colors.primary}, ${colors.primaryLight})`,
-  color: colors.white,
-  marginRight: "10px",
-  width: 44,
-  height: 44,
-});
-
-const ProfileDialog = styled(Dialog)({
-  "& .MuiPaper-root": {
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    boxShadow: colors.shadowHover,
-  },
-});
-
-const DialogHeader = styled(DialogTitle)({
-  background: colors.primary,
-  color: colors.white,
-  padding: "16px 24px",
-  display: "flex",
-  alignItems: "center",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  fontWeight: 600,
-  fontSize: "1.2rem",
-});
-
-const InfoSection = styled(Box)({
-  margin: "12px 0",
-  padding: "12px 20px",
-  borderRadius: 10,
-  backgroundColor: alpha(colors.lightGray, 0.05),
-  transition: "background-color 0.2s ease",
-});
-
-// --- Animation Variants ---
-const chatListVariants = {
-  initial: { opacity: 0, x: -20 },
-  animate: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
-};
-
-const welcomeVariants = {
-  initial: { opacity: 0, scale: 0.98 },
-  animate: { opacity: 1, scale: 1, transition: { duration: 0.6, type: "spring", stiffness: 100 } },
-};
-
-const chatAreaVariants = {
-  initial: { opacity: 0, x: 20 },
-  animate: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
-};
-
-const searchResultsVariants = {
-  initial: { opacity: 0, y: -10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.3, ease: "easeIn" } },
-};
-
-// --- Main Component ---
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -353,8 +41,9 @@ export default function HomePage() {
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [showResults, setShowResults] = useState(false);
   const [connectionProfile, setConnectionProfile] = useState(null);
+  const [connLoading, setConnLoading] = useState(true);
+  const searchTimerRef = useRef(null);
 
-  // 🔹 Fetch all connections
   const fetchConnections = async () => {
     if (!user) return;
     try {
@@ -363,604 +52,375 @@ export default function HomePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setConnections(res.data);
-    } catch (err) {
-      console.error("Error fetching connections:", err);
-    }
+    } catch (err) { console.error(err); }
+    finally { setConnLoading(false); }
   };
 
-  useEffect(() => {
-    fetchConnections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  // 🔹 Search Alumni with debounce
-  const searchTimerRef = useRef(null);
+  useEffect(() => { fetchConnections(); }, [user]); // eslint-disable-line
 
   const handleSearch = (e) => {
     const q = e.target.value;
     setSearch(q);
-
-    if (q.length === 0) {
-      setShowResults(false);
-      setResults([]);
-      return;
-    }
-
+    if (!q) { setShowResults(false); setResults([]); return; }
     setShowResults(true);
     if (q.length < 2) return;
-
     clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await axios.get("http://localhost:8080/api/alumni/search", {
-          params: { q },
-          headers: { Authorization: `Bearer ${token}` },
+          params: { q }, headers: { Authorization: `Bearer ${token}` },
         });
-
-        const merged = res.data
-          .filter((a) => a.user.id !== user.userId)
-          .map((a) => {
-            const conn = connections.find(
-              (c) =>
-                (c.sender.id === user.userId && c.receiver.id === a.user.id) ||
-                (c.receiver.id === user.userId && c.sender.id === a.user.id)
-            );
-            return { ...a, connectionStatus: conn?.status || "NONE", connectionId: conn?.id };
-          });
-
+        const merged = res.data.filter((a) => a.user.id !== user.userId).map((a) => {
+          const conn = connections.find(
+            (c) => (c.sender.id === user.userId && c.receiver.id === a.user.id) ||
+                   (c.receiver.id === user.userId && c.sender.id === a.user.id)
+          );
+          return { ...a, connectionStatus: conn?.status || "NONE", connectionId: conn?.id };
+        });
         setResults(merged);
-      } catch (err) {
-        console.error("Error searching alumni:", err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error(err); }
+      finally { setLoading(false); }
     }, 400);
   };
 
-  // 🔹 Open profile dialog from search results
   const openProfile = async (alumni) => {
     setLoading(true);
     try {
       const res = await axios.get(`http://localhost:8080/api/alumni/${alumni.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setSelectedProfile({
-        ...res.data,
-        connectionStatus: alumni.connectionStatus,
-        connectionId: alumni.connectionId,
-      });
+      setSelectedProfile({ ...res.data, connectionStatus: alumni.connectionStatus, connectionId: alumni.connectionId });
       setShowResults(false);
-    } catch (err) {
-      console.error("Error fetching profile:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  // 🔹 Open connection profile dialog
   const openConnectionProfile = async (userId) => {
-    setLoading(true);
     try {
       const res = await axios.get(`http://localhost:8080/api/alumni/user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setConnectionProfile(res.data);
-    } catch (err) {
-      console.error("Error fetching connection profile:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // 🔹 Send connect request
   const handleConnect = async (id, e) => {
     e.stopPropagation();
     try {
-      await axios.post(
-        "http://localhost:8080/api/connect",
-        { receiverId: id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post("http://localhost:8080/api/connect", { receiverId: id },
+        { headers: { Authorization: `Bearer ${token}` } });
       await fetchConnections();
-      if (search.length > 1) {
-        handleSearch({ target: { value: search } });
-      }
       setShowResults(false);
-    } catch (err) {
-      console.error("Error sending connect request:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // 🔹 Handle connection click for messaging
-  const handleConnectionClick = (conn) => {
-    setSelectedConnection(conn);
-  };
-
-  // 🔹 Render connection status button
-  const renderConnectionStatus = (alumni) => {
-    switch (alumni.connectionStatus) {
-      case "PENDING":
-        return (
-          <PendingButton size="small" disabled>
-            Pending
-          </PendingButton>
-        );
-      case "ACCEPTED":
-        return (
-          <ConnectedButton size="small" disabled>
-            Connected
-          </ConnectedButton>
-        );
-      default:
-        return (
-          <ConnectButton
-            size="small"
-            onClick={(e) => handleConnect(alumni.user.id, e)}
-          >
-            Connect
-          </ConnectButton>
-        );
-    }
-  };
-
-  // If not logged in
-  if (!user)
+  const renderConnBtn = (alumni) => {
+    const base = { borderRadius: "10px", textTransform: "none", fontWeight: 600, fontSize: "0.78rem", px: 1.5, py: 0.5 };
+    if (alumni.connectionStatus === "PENDING")
+      return <Chip label="Pending" size="small" sx={{ background: T.warningSoft, color: T.warning, fontWeight: 600, fontSize: "0.72rem" }} />;
+    if (alumni.connectionStatus === "ACCEPTED")
+      return <Chip label="Connected" size="small" sx={{ background: T.successSoft, color: T.success, fontWeight: 600, fontSize: "0.72rem" }} />;
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <Typography variant="h5" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif">
-          Please log in to view alumni network
-        </Typography>
-      </Box>
+      <Button size="small" onClick={(e) => handleConnect(alumni.user.id, e)}
+        sx={{ ...base, background: T.primary, color: "#fff", "&:hover": { background: T.primaryHover } }}>
+        Connect
+      </Button>
     );
+  };
 
-  // If a connection is selected → show MessagePage instead
-  if (selectedConnection) {
-    return (
-      <Container>
-        {/* <motion.div
-          variants={sidebarVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-        > */}
-          <Sidebar>
-            <ProfileButton
-              onClick={() => navigate("/profile")}
-              aria-label="Go to profile"
-            >
-              <PersonIcon />
-            </ProfileButton>
-          </Sidebar>
-        {/* </motion.div> */}
-        <MainContent>
-          <motion.div variants={chatListVariants} initial="initial" animate="animate">
-            <ChatList>
-              <SearchField
-                placeholder="Search alumni..."
-                value={search}
-                onChange={handleSearch}
-                onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                onFocus={() => search.length > 0 && setShowResults(true)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: colors.muted }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <AnimatePresence>
-                {showResults && (
-                  <SearchResultsContainer
-                    variants={searchResultsVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                  >
-                    {loading ? (
-                      <Box display="flex" justifyContent="center" p={1}>
-                        <CircularProgress size={24} sx={{ color: colors.accent }} />
-                      </Box>
-                    ) : results.length > 0 ? (
-                      <List disablePadding>
-                        {results.map((alumni) => (
-                          <ResultItem
-                            key={alumni.id}
-                            onClick={() => openProfile(alumni)}
-                          >
-                            <GradientAvatar>
-                              <PersonIcon />
-                            </GradientAvatar>
-                            <ListItemText
-                              primary={`${alumni.user?.firstName} ${alumni.user?.lastName}`}
-                              secondary={alumni.industry || "Industry not specified"}
-                              primaryTypographyProps={{ fontWeight: 600, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                              secondaryTypographyProps={{ color: colors.muted, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                            />
-                            {renderConnectionStatus(alumni)}
-                          </ResultItem>
-                        ))}
-                      </List>
-                    ) : search.length > 1 && (
-                      <Box p={1} textAlign="center">
-                        <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                          No results found for "{search}"
-                        </Typography>
-                      </Box>
-                    )}
-                  </SearchResultsContainer>
-                )}
-              </AnimatePresence>
-              <SectionTitle variant="h6" fontFamily="'Playfair Display', 'Giaza', serif">Your Network</SectionTitle>
-              {connections
-                .filter((conn) => conn.status === "ACCEPTED")
-                .map((conn) => {
-                  const other = conn.sender.id === user.userId ? conn.receiver : conn.sender;
-                  return (
-                    <ConnectionCard
-                      key={conn.id}
-                      onClick={() => openConnectionProfile(other.id)}
-                    >
-                      <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-                        <GradientAvatar>
-                          <PersonIcon />
-                        </GradientAvatar>
-                        <Box ml={1} sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography
-                            variant="subtitle1"
-                            fontWeight={600}
-                            fontFamily="'Inter', 'Poppins', sans-serif"
-                            sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                          >
-                            {other.firstName} {other.lastName}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color={colors.muted}
-                            fontFamily="'Inter', 'Poppins', sans-serif"
-                            sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                          >
-                            {other.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <MessageButton
-                        size="small"
-                        startIcon={<MessageIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleConnectionClick(conn);
-                        }}
-                      >
-                        Message
-                      </MessageButton>
-                    </ConnectionCard>
-                  );
-                })}
-              {connections.filter((conn) => conn.status === "ACCEPTED").length === 0 && (
-                <Box textAlign="center" p={2}>
-                  <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                    No connections yet
-                  </Typography>
-                  <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                    Search above to start connecting.
-                  </Typography>
-                </Box>
-              )}
-            </ChatList>
-          </motion.div>
-          <ChatArea variants={chatAreaVariants} initial="initial" animate="animate">
-            <MessagePage
-              connection={selectedConnection}
-              onBack={() => setSelectedConnection(null)}
-              token={token}
-              currentUserId={user.userId}
-            />
-          </ChatArea>
-        </MainContent>
-      </Container>
-    );
+  if (!user) return (
+    <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ background: T.bg }}>
+      <Typography color={T.textSecondary}>Please log in.</Typography>
+    </Box>
+  );
+
+  // Admin has no network page — redirect to dashboard
+  if (user.role === "ADMIN") {
+    navigate("/admin");
+    return null;
   }
 
-  return (
-    <Container>
-      {/* <motion.div
-        variants={sidebarVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-      > */}
-        <Sidebar>
-          <ProfileButton
-            onClick={() => navigate("/profile")}
-            aria-label="Go to profile"
-          >
-            <PersonIcon />
-          </ProfileButton>
-        </Sidebar>
-      {/* </motion.div> */}
-      <MainContent>
-        <motion.div variants={chatListVariants} initial="initial" animate="animate">
-          <ChatList>
-            <SearchField
-              placeholder="Search alumni..."
-              value={search}
-              onChange={handleSearch}
-              onBlur={() => setTimeout(() => setShowResults(false), 200)}
-              onFocus={() => search.length > 0 && setShowResults(true)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: colors.muted }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <AnimatePresence>
-              {showResults && (
-                <SearchResultsContainer
-                  variants={searchResultsVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                >
-                  {loading ? (
-                    <Box display="flex" justifyContent="center" p={1}>
-                      <CircularProgress size={24} sx={{ color: colors.accent }} />
-                    </Box>
-                  ) : results.length > 0 ? (
-                    <List disablePadding>
-                      {results.map((alumni) => (
-                        <ResultItem
-                          key={alumni.id}
-                          onClick={() => openProfile(alumni)}
-                        >
-                          <GradientAvatar>
-                            <PersonIcon />
-                          </GradientAvatar>
-                          <ListItemText
-                            primary={`${alumni.user?.firstName} ${alumni.user?.lastName}`}
-                            secondary={alumni.industry || "Industry not specified"}
-                            primaryTypographyProps={{ fontWeight: 600, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                            secondaryTypographyProps={{ color: colors.muted, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                          />
-                          {renderConnectionStatus(alumni)}
-                        </ResultItem>
-                      ))}
-                    </List>
-                  ) : search.length > 1 && (
-                    <Box p={1} textAlign="center">
-                      <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                        No results found for "{search}"
+  const acceptedConns = connections.filter((c) => c.status === "ACCEPTED");
+
+  const chatListPanel = (
+    <Box sx={{
+      width: 340, flexShrink: 0,
+      background: "rgba(255,255,255,0.02)",
+      borderRight: `1px solid ${T.border}`,
+      height: "100vh", overflowY: "auto", position: "relative",
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* Search */}
+      <Box sx={{ p: 2, borderBottom: `1px solid ${T.border}` }}>
+        <TextField
+          fullWidth placeholder="Search alumni…"
+          value={search} onChange={handleSearch}
+          onBlur={() => setTimeout(() => setShowResults(false), 200)}
+          onFocus={() => search.length > 0 && setShowResults(true)}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: T.textMuted, fontSize: 18 }} /></InputAdornment>,
+            sx: {
+              background: "rgba(255,255,255,0.05)", borderRadius: "12px",
+              color: T.textPrimary, fontSize: "0.875rem",
+              "& fieldset": { border: `1px solid ${T.border}` },
+              "&:hover fieldset": { borderColor: T.borderHover },
+              "&.Mui-focused fieldset": { borderColor: T.primary },
+            },
+          }}
+          inputProps={{ style: { color: T.textPrimary, padding: "10px 12px" } }}
+        />
+        {/* Search Results Dropdown */}
+        <AnimatePresence>
+          {showResults && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              style={{
+                position: "absolute", top: 72, left: 12, right: 12, zIndex: 50,
+                background: "#131929", border: `1px solid ${T.border}`,
+                borderRadius: 14, boxShadow: T.shadow, maxHeight: 360, overflowY: "auto",
+              }}>
+              {loading ? (
+                <Box p={2}><CircularProgress size={20} sx={{ color: T.primary }} /></Box>
+              ) : results.length > 0 ? (
+                <List disablePadding>
+                  {results.map((a) => (
+                    <ListItem key={a.id} onClick={() => openProfile(a)}
+                      sx={{ cursor: "pointer", py: 1.5, px: 2, "&:hover": { background: "rgba(255,255,255,0.05)" }, borderBottom: `1px solid ${T.border}` }}>
+                      <Avatar sx={{ background: getAvatarGradient(a.user?.firstName), width: 36, height: 36, mr: 1.5, fontSize: "0.85rem", fontWeight: 700 }}>
+                        {a.user?.firstName?.[0]}{a.user?.lastName?.[0]}
+                      </Avatar>
+                      <ListItemText
+                        primary={`${a.user?.firstName} ${a.user?.lastName}`}
+                        secondary={a.industry || "Alumni"}
+                        primaryTypographyProps={{ color: T.textPrimary, fontWeight: 600, fontSize: "0.875rem" }}
+                        secondaryTypographyProps={{ color: T.textSecondary, fontSize: "0.75rem" }}
+                      />
+                      {renderConnBtn(a)}
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Box p={2}><Typography color={T.textMuted} fontSize="0.85rem">No results for "{search}"</Typography></Box>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Box>
+
+      {/* Network List */}
+      <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+        <Typography sx={{ color: T.textSecondary, fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Your Network · {acceptedConns.length}
+        </Typography>
+      </Box>
+
+      <Box sx={{ flex: 1, overflowY: "auto" }}>
+        {connLoading ? (
+          [1,2,3].map((i) => (
+            <Box key={i} sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Skeleton variant="circular" width={40} height={40} sx={{ bgcolor: "rgba(255,255,255,0.06)" }} />
+              <Box flex={1}><Skeleton width="60%" height={14} sx={{ bgcolor: "rgba(255,255,255,0.06)" }} /><Skeleton width="40%" height={12} sx={{ bgcolor: "rgba(255,255,255,0.04)", mt: 0.5 }} /></Box>
+            </Box>
+          ))
+        ) : acceptedConns.length === 0 ? (
+          <Box sx={{ p: 3, textAlign: "center" }}>
+            <SchoolIcon sx={{ color: T.textMuted, fontSize: 36, mb: 1 }} />
+            <Typography color={T.textMuted} fontSize="0.85rem">No connections yet.</Typography>
+            <Typography color={T.textMuted} fontSize="0.78rem">Search above to connect.</Typography>
+          </Box>
+        ) : (
+          <motion.div variants={listVariants} initial="initial" animate="animate">
+            {acceptedConns.map((conn) => {
+              const other = conn.sender.id === user.userId ? conn.receiver : conn.sender;
+              const isActive = selectedConnection?.id === conn.id;
+              return (
+                <motion.div key={conn.id} variants={itemVariants}>
+                  <Box
+                    onClick={() => setSelectedConnection(conn)}
+                    sx={{
+                      px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1.5,
+                      cursor: "pointer", transition: "all 0.15s",
+                      background: isActive ? "rgba(37,99,235,0.12)" : "transparent",
+                      borderLeft: isActive ? `3px solid ${T.primary}` : "3px solid transparent",
+                      "&:hover": { background: "rgba(255,255,255,0.04)" },
+                    }}
+                  >
+                    <Avatar sx={{ background: getAvatarGradient(other.firstName), width: 40, height: 40, fontSize: "0.85rem", fontWeight: 700, flexShrink: 0 }}>
+                      {other.firstName?.[0]}{other.lastName?.[0]}
+                    </Avatar>
+                    <Box flex={1} minWidth={0}>
+                      <Typography sx={{ color: T.textPrimary, fontWeight: 600, fontSize: "0.875rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {other.firstName} {other.lastName}
+                      </Typography>
+                      <Typography sx={{ color: T.textSecondary, fontSize: "0.75rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {other.email}
                       </Typography>
                     </Box>
-                  )}
-                </SearchResultsContainer>
-              )}
-            </AnimatePresence>
-            <SectionTitle variant="h6">Your Network</SectionTitle>
-            {connections
-              .filter((conn) => conn.status === "ACCEPTED")
-              .map((conn) => {
-                const other = conn.sender.id === user.userId ? conn.receiver : conn.sender;
-                return (
-                  <ConnectionCard
-                    key={conn.id}
-                    onClick={() => openConnectionProfile(other.id)}
-                  >
-                    <Box display="flex" alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-                      <GradientAvatar>
-                        <PersonIcon />
-                      </GradientAvatar>
-                      <Box ml={1} sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography
-                          variant="subtitle1"
-                          fontWeight={600}
-                          fontFamily="'Inter', 'Poppins', sans-serif"
-                          sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        >
-                          {other.firstName} {other.lastName}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color={colors.muted}
-                          fontFamily="'Inter', 'Poppins', sans-serif"
-                          sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        >
-                          {other.email}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <MessageButton
-                      size="small"
-                      startIcon={<MessageIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConnectionClick(conn);
-                      }}
-                    >
-                      Message
-                    </MessageButton>
-                  </ConnectionCard>
-                );
-              })}
-            {connections.filter((conn) => conn.status === "ACCEPTED").length === 0 && (
-              <Box textAlign="center" p={2}>
-                <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                  No connections yet
-                </Typography>
-                <Typography color={colors.muted} variant="body2" fontFamily="'Inter', 'Poppins', sans-serif">
-                  Search above to start connecting.
-                </Typography>
-              </Box>
-            )}
-          </ChatList>
-        </motion.div>
-        <WelcomeSection variants={welcomeVariants} initial="initial" animate="animate">
-          <motion.div
-            initial={{ scale: 0, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, type: "spring", stiffness: 120 }}
-          >
-            <SchoolIcon sx={{ fontSize: 72, color: colors.white }} />
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setSelectedConnection(conn); }}
+                      sx={{ color: T.primary, "&:hover": { background: "rgba(37,99,235,0.15)" } }}>
+                      <MessageIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Box>
+                </motion.div>
+              );
+            })}
           </motion.div>
-          <Typography
-            variant="h3"
-            fontWeight={700}
-            color={alpha(colors.white, 0.8)}
-            fontFamily="'Playfair Display', 'Giaza', serif"
-            sx={{ letterSpacing: "-0.5px", lineHeight: 1.1 }}
-          >
-            Allumni Network
-          </Typography>
-          <Typography
-            variant="body1"
-            color={colors.white}
-            fontFamily="'Inter', 'Poppins', sans-serif"
-            sx={{ lineHeight: 1.4, mb: 1 }}
-          >
-            Reconnect with peers, unlock career opportunities, and share your story in a vibrant community.
-          </Typography>
-          <Typography
-            variant="body2"
-            color={alpha(colors.white, 0.8)}
-            fontFamily="'Inter', 'Poppins', sans-serif"
-            sx={{ fontStyle: "italic", letterSpacing: "0.5px", lineHeight: 1.3 }}
-          >
-            "Your network is your strength – build it today."
-          </Typography>
-        </WelcomeSection>
-      </MainContent>
+        )}
+      </Box>
+    </Box>
+  );
 
-      {/* Enhanced Profile Dialog from Search */}
-      <ProfileDialog
-        open={!!selectedProfile}
-        onClose={() => setSelectedProfile(null)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogHeader>
-          <IconButton
-            onClick={() => setSelectedProfile(null)}
-            sx={{ color: colors.white, mr: 1 }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
+  return (
+    <Box sx={{ display: "flex", height: "100vh", background: T.bg, fontFamily: T.font }}>
+      <AppSidebar />
+      <Box sx={{ display: "flex", flex: 1, marginLeft: "72px", overflow: "hidden" }}>
+        {chatListPanel}
+
+        {/* Main area */}
+        <Box sx={{ flex: 1, overflow: "hidden" }}>
+          <AnimatePresence mode="wait">
+            {selectedConnection ? (
+              <motion.div key="chat" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} style={{ height: "100%" }}>
+                <MessagePage connection={selectedConnection} onBack={() => setSelectedConnection(null)} token={token} currentUserId={user.userId} />
+              </motion.div>
+            ) : (
+              <motion.div key="welcome" variants={pageVariants} initial="initial" animate="animate"
+                style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 120, delay: 0.1 }}>
+                  <Box sx={{
+                    width: 96, height: 96, borderRadius: "24px", background: T.gradientBlue,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "0 8px 32px rgba(37,99,235,0.4)", mb: 3,
+                  }}>
+                    <SchoolIcon sx={{ fontSize: 48, color: "#fff" }} />
+                  </Box>
+                </motion.div>
+                <Typography variant="h3" sx={{ color: T.textPrimary, fontWeight: 800, textAlign: "center", mb: 1.5, letterSpacing: "-0.5px" }}>
+                  Alumni Network
+                </Typography>
+                <Typography sx={{ color: T.textSecondary, textAlign: "center", maxWidth: 480, lineHeight: 1.7, mb: 3 }}>
+                  Reconnect with peers, unlock career opportunities, and grow your professional network.
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
+                  {[
+                    { label: `${acceptedConns.length} Connections`, color: T.primary },
+                    { label: "Search Alumni →", color: T.accent },
+                  ].map((b) => (
+                    <Box key={b.label} sx={{ px: 3, py: 1, borderRadius: "10px", border: `1px solid ${b.color}33`, color: b.color, fontSize: "0.875rem", fontWeight: 600 }}>
+                      {b.label}
+                    </Box>
+                  ))}
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Box>
+      </Box>
+
+      {/* Profile Dialog */}
+      <Dialog open={!!selectedProfile} onClose={() => setSelectedProfile(null)} fullWidth maxWidth="sm"
+        PaperProps={{ sx: { background: "#0F1629", border: `1px solid ${T.border}`, borderRadius: "20px" } }}>
+        <DialogTitle sx={{ background: T.gradientBlue, color: "#fff", display: "flex", alignItems: "center", gap: 1, fontWeight: 700 }}>
+          <IconButton onClick={() => setSelectedProfile(null)} sx={{ color: "#fff", mr: 1 }}><ArrowBackIcon /></IconButton>
           Profile Details
-        </DialogHeader>
-        <DialogContent sx={{ p: "24px", background: colors.secondary }}>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, background: "#0F1629" }}>
           {selectedProfile && (
             <>
               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <GradientAvatar sx={{ mr: 2, width: 64, height: 64 }}>
-                  <PersonIcon sx={{ fontSize: 32 }} />
-                </GradientAvatar>
+                <Avatar sx={{ background: getAvatarGradient(selectedProfile.user?.firstName), width: 64, height: 64, fontSize: "1.4rem", fontWeight: 700, mr: 2 }}>
+                  {selectedProfile.user?.firstName?.[0]}{selectedProfile.user?.lastName?.[0]}
+                </Avatar>
                 <Box>
-                  <Typography variant="h5" fontWeight={600} fontFamily="'Inter', 'Poppins', sans-serif">
-                    {selectedProfile.user?.firstName} {selectedProfile.user?.lastName}
-                  </Typography>
-                  <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif">
-                    {selectedProfile.industry || "Industry not specified"}
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" sx={{ color: T.textPrimary, fontWeight: 700 }}>
+                      {selectedProfile.user?.firstName} {selectedProfile.user?.lastName}
+                    </Typography>
+                    {selectedProfile.isVerified && <VerifiedIcon sx={{ color: T.primary, fontSize: 18 }} />}
+                  </Box>
+                  <Typography sx={{ color: T.textSecondary, fontSize: "0.875rem" }}>{selectedProfile.industry}</Typography>
                 </Box>
               </Box>
-              <Divider sx={{ mb: 2, borderColor: alpha(colors.muted, 0.2) }} />
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Bio
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {selectedProfile.bio || "No bio provided"}
-                </Typography>
-              </InfoSection>
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Skills
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {selectedProfile.skills || "No skills specified"}
-                </Typography>
-              </InfoSection>
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Contact
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {selectedProfile.user?.email || "Email not available"}
-                </Typography>
-              </InfoSection>
-              {selectedProfile.connectionStatus && (
-                <Box sx={{ mt: 2, textAlign: "center" }}>
-                  {renderConnectionStatus(selectedProfile)}
+              <Divider sx={{ borderColor: T.border, mb: 2 }} />
+              {[
+                { label: "Bio", value: selectedProfile.bio || "No bio provided" },
+                { label: "Contact", value: selectedProfile.user?.email },
+              ].map(({ label, value }) => (
+                <Box key={label} sx={{ mb: 2 }}>
+                  <Typography sx={{ color: T.textSecondary, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", mb: 0.5 }}>{label}</Typography>
+                  <Typography sx={{ color: T.textPrimary, fontSize: "0.875rem", lineHeight: 1.6 }}>{value}</Typography>
+                </Box>
+              ))}
+              {selectedProfile.skills && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ color: T.textSecondary, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", mb: 1 }}>Skills</Typography>
+                  <Box display="flex" flexWrap="wrap" gap={0.75}>
+                    {selectedProfile.skills.split(",").map((s) => (
+                      <Chip key={s} label={s.trim()} size="small"
+                        sx={{ background: "rgba(37,99,235,0.15)", color: "#93C5FD", border: "1px solid rgba(37,99,235,0.3)", fontSize: "0.75rem" }} />
+                    ))}
+                  </Box>
                 </Box>
               )}
+              <Box sx={{ display: "flex", gap: 1.5, mt: 3, flexWrap: "wrap" }}>
+                {renderConnBtn(selectedProfile)}
+                {user.userType === "STUDENT" && (
+                  <Button size="small" startIcon={<MentorIcon />}
+                    onClick={async () => {
+                      try { await mentorshipAPI.sendRequest(selectedProfile.user.id, ""); alert("Mentorship request sent!"); }
+                      catch (err) { alert(err.response?.data || "Request failed"); }
+                    }}
+                    sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, fontSize: "0.78rem", background: "rgba(245,166,35,0.15)", color: T.accent, border: `1px solid rgba(245,166,35,0.3)`, "&:hover": { background: "rgba(245,166,35,0.25)" } }}>
+                    Request Mentorship
+                  </Button>
+                )}
+              </Box>
             </>
           )}
         </DialogContent>
-      </ProfileDialog>
+      </Dialog>
 
-      {/* Enhanced Connection Profile Dialog */}
-      <ProfileDialog
-        open={!!connectionProfile}
-        onClose={() => setConnectionProfile(null)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogHeader>
-          <IconButton
-            onClick={() => setConnectionProfile(null)}
-            sx={{ color: colors.white, mr: 1 }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-          Connection Details
-        </DialogHeader>
-        <DialogContent sx={{ p: "24px", background: colors.secondary }}>
+      {/* Connection Profile Dialog */}
+      <Dialog open={!!connectionProfile} onClose={() => setConnectionProfile(null)} fullWidth maxWidth="sm"
+        PaperProps={{ sx: { background: "#0F1629", border: `1px solid ${T.border}`, borderRadius: "20px" } }}>
+        <DialogTitle sx={{ background: T.gradientBlue, color: "#fff", display: "flex", alignItems: "center", gap: 1, fontWeight: 700 }}>
+          <IconButton onClick={() => setConnectionProfile(null)} sx={{ color: "#fff", mr: 1 }}><CloseIcon /></IconButton>
+          Connection Profile
+        </DialogTitle>
+        <DialogContent sx={{ p: 3, background: "#0F1629" }}>
           {connectionProfile && (
             <>
               <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <GradientAvatar sx={{ mr: 2, width: 64, height: 64 }}>
-                  <PersonIcon sx={{ fontSize: 32 }} />
-                </GradientAvatar>
+                <Avatar sx={{ background: getAvatarGradient(connectionProfile.user?.firstName), width: 64, height: 64, fontSize: "1.4rem", fontWeight: 700, mr: 2 }}>
+                  {connectionProfile.user?.firstName?.[0]}{connectionProfile.user?.lastName?.[0]}
+                </Avatar>
                 <Box>
-                  <Typography variant="h5" fontWeight={600} fontFamily="'Inter', 'Poppins', sans-serif">
+                  <Typography variant="h6" sx={{ color: T.textPrimary, fontWeight: 700 }}>
                     {connectionProfile.user?.firstName} {connectionProfile.user?.lastName}
                   </Typography>
-                  <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif">
-                    {connectionProfile.industry || "Industry not specified"}
-                  </Typography>
+                  <Typography sx={{ color: T.textSecondary, fontSize: "0.875rem" }}>{connectionProfile.industry}</Typography>
                 </Box>
               </Box>
-              <Divider sx={{ mb: 2, borderColor: alpha(colors.muted, 0.2) }} />
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Bio
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {connectionProfile.bio || "No bio provided"}
-                </Typography>
-              </InfoSection>
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Skills
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {connectionProfile.skills || "No skills specified"}
-                </Typography>
-              </InfoSection>
-              <InfoSection>
-                <Typography variant="subtitle1" fontWeight={600} color={colors.primary} fontFamily="'Inter', 'Poppins', sans-serif">
-                  Contact
-                </Typography>
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif" sx={{ lineHeight: 1.6 }}>
-                  {connectionProfile.user?.email || "Email not available"}
-                </Typography>
-              </InfoSection>
+              <Divider sx={{ borderColor: T.border, mb: 2 }} />
+              {connectionProfile.skills && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ color: T.textSecondary, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", mb: 1 }}>Skills</Typography>
+                  <Box display="flex" flexWrap="wrap" gap={0.75}>
+                    {connectionProfile.skills.split(",").map((s) => (
+                      <Chip key={s} label={s.trim()} size="small"
+                        sx={{ background: "rgba(37,99,235,0.15)", color: "#93C5FD", border: "1px solid rgba(37,99,235,0.3)", fontSize: "0.75rem" }} />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+              <Box sx={{ mb: 1 }}>
+                <Typography sx={{ color: T.textSecondary, fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", mb: 0.5 }}>Contact</Typography>
+                <Typography sx={{ color: T.textPrimary, fontSize: "0.875rem" }}>{connectionProfile.user?.email}</Typography>
+              </Box>
             </>
           )}
         </DialogContent>
-      </ProfileDialog>
-    </Container>
+      </Dialog>
+    </Box>
   );
 }

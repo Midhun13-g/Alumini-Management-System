@@ -38,17 +38,26 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/alumni/**").authenticated()
                 .requestMatchers("/api/student/**").authenticated()
                 .requestMatchers("/api/connect/**").authenticated()
                 .requestMatchers("/api/messages/**").authenticated()
+                .requestMatchers("/api/mentorship/**").authenticated()
+                .requestMatchers("/api/events/**").authenticated()
+                .requestMatchers("/api/jobs/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((req, res, e) -> {        // <-- add (clear 401 vs 403)
+                .authenticationEntryPoint((req, res, e) -> {
                     res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     res.setContentType("application/json");
                     res.getWriter().write("{\"error\":\"unauthorized\",\"message\":\"" + e.getMessage() + "\"}");
+                })
+                .accessDeniedHandler((req, res, e) -> {
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\":\"forbidden\",\"message\":\"Access denied\"}" );
                 })
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

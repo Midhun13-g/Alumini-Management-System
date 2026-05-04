@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<MessageEntity, Long> {
     List<MessageEntity> findByConnectionOrderBySentAtAsc(ConnectEntity connection);
+    void deleteByConnection_Id(Long connectionId);
+    void deleteBySender_Id(Long senderId);
 }

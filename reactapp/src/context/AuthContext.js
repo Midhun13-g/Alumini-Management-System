@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
         firstName: payload.firstName,
         lastName: payload.lastName,
         userType: payload.userType,
+        role: payload.role,
       }));
       setUser({
         userId: payload.userId,
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }) => {
         firstName: payload.firstName,
         lastName: payload.lastName,
         userType: payload.userType,
+        role: payload.role,
       });
     },
     logout: () => {

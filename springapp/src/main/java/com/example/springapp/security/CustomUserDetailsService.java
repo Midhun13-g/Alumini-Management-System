@@ -22,11 +22,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 u.getEmail(),
                 u.getPassword(),
-                u.isActive(),        // enabled
-                true,                // accountNonExpired
-                true,                // credentialsNonExpired
-                true,                // accountNonLocked
-                Collections.singletonList(() -> "USER") // give a ROLE/authority
+                u.isActive(),
+                true, true, true,
+                Collections.singletonList(() -> "ROLE_" + (u.getRole() != null ? u.getRole() : "USER"))
         );
     }
 }

@@ -61,12 +61,11 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
 
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                    // ✅ Authorities null is fine if you don't use roles
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
-                                    null
+                                    userDetails.getAuthorities()
                             );
 
                     SecurityContextHolder.getContext().setAuthentication(auth);

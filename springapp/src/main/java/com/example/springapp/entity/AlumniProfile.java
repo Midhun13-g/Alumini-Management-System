@@ -32,4 +32,7 @@ public class AlumniProfile {
 
     @Column(name = "linkedin_url")  // LinkedIn profile URL
     private String linkedinUrl;
+
+    @Column(name = "is_verified", nullable = false)
+    private boolean isVerified = false;
 }

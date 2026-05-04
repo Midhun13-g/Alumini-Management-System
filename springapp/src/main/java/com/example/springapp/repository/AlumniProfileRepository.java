@@ -20,5 +20,7 @@ public interface AlumniProfileRepository extends JpaRepository<AlumniProfile, Lo
     List<AlumniProfile> searchAlumni(@Param("query") String query);
 
 Optional<AlumniProfile> findByUser(User user);
+    Optional<AlumniProfile> findByUserId(Long userId);
+    void deleteByUser_Id(Long userId);
 }
 

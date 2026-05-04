@@ -7,16 +7,18 @@ public class LoginResponseDTO {
     private String firstName;
     private String lastName;
     private String userType;
+    private String role;
 
     public LoginResponseDTO() {}
 
-    public LoginResponseDTO(String token, Long userId, String email, String firstName, String lastName, String userType) {
+    public LoginResponseDTO(String token, Long userId, String email, String firstName, String lastName, String userType, String role) {
         this.token = token;
         this.userId = userId;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.userType = userType;
+        this.role = role;
     }
 
     public String getToken() { return token; }
@@ -25,6 +27,7 @@ public class LoginResponseDTO {
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getUserType() { return userType; }
+    public String getRole() { return role; }
 
     public void setToken(String token) { this.token = token; }
     public void setUserId(Long userId) { this.userId = userId; }
@@ -32,4 +35,5 @@ public class LoginResponseDTO {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
     public void setUserType(String userType) { this.userType = userType; }
+    public void setRole(String role) { this.role = role; }
 }

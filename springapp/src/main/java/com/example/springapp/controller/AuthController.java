@@ -52,7 +52,7 @@ public class AuthController {
         }
 
         String token = jwtTokenProvider.generateToken(
-                user.getId(), user.getEmail(), user.getUserType()
+                user.getId(), user.getEmail(), user.getUserType(), user.getRole()
         );
 
         return ResponseEntity.ok(new LoginResponseDTO(
@@ -61,7 +61,8 @@ public class AuthController {
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                user.getUserType()
+                user.getUserType(),
+                user.getRole()
         ));
     }
 

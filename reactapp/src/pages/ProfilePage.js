@@ -1,250 +1,40 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
-  Box,
-  Typography,
-  Paper,
-  Avatar,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  styled,
-  alpha,
-  CircularProgress,
+  Box, Typography, Avatar, Button, Dialog, DialogActions, DialogContent,
+  DialogTitle, TextField, List, ListItem, ListItemText, IconButton,
+  Chip, CircularProgress, Divider,
 } from "@mui/material";
 import {
-  Person as PersonIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ArrowForward as ArrowForwardIcon,
-  ConnectWithoutContact as ConnectIcon,
-  HourglassEmpty as PendingIcon,
+  Edit as EditIcon, Delete as DeleteIcon, ArrowForward as ArrowForwardIcon,
+  ConnectWithoutContact as ConnectIcon, HourglassEmpty as PendingIcon,
+  Logout as LogoutIcon, LinkedIn as LinkedInIcon, Verified as VerifiedIcon,
 } from "@mui/icons-material";
+import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import AppSidebar from "../components/AppSidebar";
+import { T, pageVariants, listVariants, itemVariants } from "../theme";
 
-// --- Color Palette (same as HomePage) ---
-const colors = {
-  primary: "#032e74ff", // Dark slate for primary elements
-  primaryLight: "#4d8ed4ff",
-  secondary: "#f5f7faff",
-  accent: "#00d4b8ff",
-  accentLight: "#e6fffcff",
-  success: "#22c55eff",
-  warning: "#f59e0bff",
-  muted: "#94a3b8ff",
-  white: "#ffffff",
-  lightGray: "#e2e8f0ff",
-  shadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
-  shadowHover: "0 6px 24px rgba(0, 0, 0, 0.12)",
+const getAvatarGradient = (name = "") => {
+  const colors = ["linear-gradient(135deg,#1e3a8a,#2563EB)", "linear-gradient(135deg,#065f46,#10B981)", "linear-gradient(135deg,#7c2d12,#F5A623)", "linear-gradient(135deg,#4c1d95,#8B5CF6)"];
+  return colors[(name.charCodeAt(0) || 0) % colors.length];
 };
 
-// --- Styled Components ---
-const Container = styled(Box)({
-  display: "flex",
-  minHeight: "100vh",
-  backgroundColor: colors.secondary,
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-});
+const GlassCard = ({ children, sx = {} }) => (
+  <Box sx={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(20px)", border: `1px solid ${T.border}`, borderRadius: "16px", p: 3, ...sx }}>
+    {children}
+  </Box>
+);
 
-const Sidebar = styled(Box)({
-  width: 80,
-  background: colors.primary,
-  color: colors.white,
-  height: "100vh",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  paddingTop: "24px",
-  position: "fixed",
-  top: 0,
-  right: 0,
-  boxShadow: colors.shadow,
-});
+const SLabel = ({ children }) => (
+  <Typography sx={{ color: T.textSecondary, fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", mb: 1 }}>
+    {children}
+  </Typography>
+);
 
-const MainContent = styled(Box)({
-  flex: 1,
-  padding: "32px",
-  marginRight: 80,
-  overflowY: "auto",
-});
-
-const ProfileCard = styled(Paper)({
-  padding: "24px",
-  marginBottom: "24px",
-  borderRadius: 12,
-  backgroundColor: colors.white,
-  boxShadow: colors.shadow,
-  transition: "all 0.2s ease",
-  width: "100%", // Full width
-  "&:hover": {
-    boxShadow: colors.shadowHover,
-  },
-});
-
-const RequestCard = styled(Paper)({
-  padding: "24px",
-  borderRadius: 12,
-  backgroundColor: colors.white,
-  boxShadow: colors.shadow,
-  transition: "all 0.2s ease",
-  width: "100%", // Full width
-  "&:hover": {
-    boxShadow: colors.shadowHover,
-  },
-});
-
-const RequestsContainer = styled(Box)({
-  display: "flex",
-  gap: "24px",
-  flexWrap: "wrap", // Allow wrapping for smaller screens
-  "& > *": {
-    flex: "1 1 calc(50% - 12px)", // Side-by-side, accounting for gap
-    minWidth: 300, // Minimum width for readability
-  },
-});
-
-const GradientAvatar = styled(Avatar)({
-  background: `linear-gradient(45deg, ${colors.primary}, ${colors.primaryLight})`,
-  color: colors.white,
-  width: 80,
-  height: 80,
-  marginRight: "16px",
-});
-
-const ProfileButton = styled(IconButton)({
-  width: 52,
-  height: 52,
-  borderRadius: "50%",
-  backgroundColor: alpha(colors.white, 0.15),
-  color: colors.white,
-  marginBottom: "12px",
-  transition: "all 0.3s ease",
-  "&:hover": {
-    backgroundColor: alpha(colors.accent, 0.2),
-    transform: "scale(1.05)",
-  },
-});
-
-const ActionButton = styled(Button)({
-  background: colors.accent,
-  color: colors.white,
-  borderRadius: 16,
-  padding: "6px 16px",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  "&:hover": {
-    backgroundColor: alpha(colors.accent, 0.9),
-    boxShadow: colors.shadow,
-  },
-});
-
-const RejectButton = styled(Button)({
-  borderColor: colors.warning,
-  color: colors.warning,
-  borderRadius: 16,
-  padding: "6px 16px",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  "&:hover": {
-    backgroundColor: alpha(colors.warning, 0.1),
-    borderColor: colors.warning,
-  },
-});
-
-const LogoutButton = styled(Button)({
-  background: colors.primaryLight,
-  color: colors.white,
-  borderRadius: 16,
-  padding: "6px 16px",
-  fontSize: "0.85rem",
-  fontWeight: 500,
-  textTransform: "none",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  "&:hover": {
-    backgroundColor: alpha(colors.primaryLight, 0.9),
-    boxShadow: colors.shadow,
-  },
-});
-
-const ProfileDialog = styled(Dialog)({
-  "& .MuiPaper-root": {
-    borderRadius: 16,
-    backgroundColor: colors.white,
-    boxShadow: colors.shadowHover,
-  },
-});
-
-const DialogHeader = styled(DialogTitle)({
-  background: colors.primary,
-  color: colors.white,
-  padding: "16px 24px",
-  display: "flex",
-  alignItems: "center",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  fontWeight: 600,
-  fontSize: "1.2rem",
-});
-
-const StyledTextField = styled(TextField)({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 12,
-    "& fieldset": {
-      border: `1px solid ${alpha(colors.muted, 0.2)}`,
-    },
-    "&:hover": {
-      backgroundColor: alpha(colors.lightGray, 0.3),
-    },
-    "&.Mui-focused": {
-      backgroundColor: colors.white,
-      "& fieldset": {
-        borderColor: colors.accent,
-      },
-    },
-  },
-  "& .MuiInputBase-input": {
-    padding: "10px 14px",
-    fontFamily: "'Inter', 'Poppins', sans-serif",
-    fontWeight: 400,
-    color: colors.primary,
-  },
-  marginBottom: "12px",
-});
-
-const ListItemStyled = styled(ListItem)({
-  borderRadius: 10,
-  margin: "6px 0",
-  padding: "10px 12px",
-  "&:hover": {
-    backgroundColor: alpha(colors.accentLight, 0.2),
-  },
-});
-
-const SectionTitle = styled(Typography)({
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  fontWeight: 600,
-  fontSize: "1.1rem",
-  fontFamily: "'Inter', 'Poppins', sans-serif",
-  marginBottom: "12px",
-});
-
-// --- Main Component ---
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
@@ -260,389 +50,255 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
-  const axiosConfig = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
+  const profileApi = user?.userType === "ALUMNI" ? "http://localhost:8080/api/alumni/my" : "http://localhost:8080/api/student/my";
 
-  const profileApi =
-    user?.userType === "ALUMNI"
-      ? "http://localhost:8080/api/alumni/my"
-      : "http://localhost:8080/api/student/my";
+  // Admin has no alumni/student profile — skip loading
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
-    if (!token) return;
-
-    const fetchProfile = async () => {
+    if (!token || isAdmin) { setLoading(false); return; }
+    const load = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(profileApi, axiosConfig);
-        setProfile(res.data);
-
-        if (user.userType === "ALUMNI") {
-          setIndustry(res.data.industry || "");
-          setSkills(res.data.skills || "");
-          setLinkedinUrl(res.data.linkedinUrl || "");
-        } else {
-          setDepartment(res.data.department || "");
-          setYearOfJoining(res.data.yearOfJoining || "");
-          setLinkedinUrl(res.data.linkedinUrl || "");
-        }
-      } catch (err) {
-        console.error("Profile fetch failed:", err);
-        setError("Failed to fetch profile.");
-      } finally {
-        setLoading(false);
-      }
+        const [pRes, recRes, sentRes] = await Promise.all([
+          axios.get(profileApi, axiosConfig),
+          axios.get("http://localhost:8080/api/connect/received/pending", axiosConfig),
+          axios.get("http://localhost:8080/api/connect/sent/pending", axiosConfig),
+        ]);
+        setProfile(pRes.data);
+        if (user.userType === "ALUMNI") { setIndustry(pRes.data.industry || ""); setSkills(pRes.data.skills || ""); setLinkedinUrl(pRes.data.linkedinUrl || ""); }
+        else { setDepartment(pRes.data.department || ""); setYearOfJoining(pRes.data.yearOfJoining || ""); setLinkedinUrl(pRes.data.linkedinUrl || ""); }
+        setReceivedRequests(recRes.data);
+        setSentPending(sentRes.data);
+      } catch (err) { setError("Failed to load profile."); }
+      finally { setLoading(false); }
     };
-
-    const fetchReceivedRequests = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:8080/api/connect/received/pending",
-          axiosConfig
-        );
-        setReceivedRequests(res.data);
-      } catch (err) {
-        console.error("Received requests fetch failed:", err);
-      }
-    };
-
-    const fetchSentPending = async () => {
-      try {
-        const res = await axios.get(
-          "http://localhost:8080/api/connect/sent/pending",
-          axiosConfig
-        );
-        setSentPending(res.data);
-      } catch (err) {
-        console.error("Sent pending fetch failed:", err);
-      }
-    };
-
-    fetchProfile();
-    fetchReceivedRequests();
-    fetchSentPending();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, profileApi, user?.userType]);
-
-  const handleEditOpen = () => setEditOpen(true);
-  const handleEditClose = () => setEditOpen(false);
+    load();
+  }, [token]); // eslint-disable-line
 
   const handleUpdate = async () => {
     try {
-      const body =
-        user.userType === "ALUMNI"
-          ? { industry, skills, linkedinUrl }
-          : { department, yearOfJoining, linkedinUrl };
-
+      const body = user.userType === "ALUMNI" ? { industry, skills, linkedinUrl } : { department, yearOfJoining, linkedinUrl };
       const res = await axios.put(profileApi, body, axiosConfig);
-      setProfile(res.data);
-      setEditOpen(false);
-      setError(null);
-    } catch (err) {
-      console.error("Update failed:", err);
-      setError("Failed to update profile.");
-    }
+      setProfile(res.data); setEditOpen(false); setError(null);
+    } catch (err) { setError("Failed to update."); }
   };
 
-  const handleDeletePending = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8080/api/connect/${id}`, axiosConfig);
-      setSentPending((prev) => prev.filter((req) => req.id !== id));
-    } catch (err) {
-      console.error("Delete pending failed:", err);
-      setError("Failed to delete pending request.");
-    }
+  const handleAccept = async (id) => {
+    await axios.post(`http://localhost:8080/api/connect/accept/${id}`, {}, axiosConfig);
+    setReceivedRequests((p) => p.filter((r) => r.id !== id));
   };
-
-  const handleAcceptRequest = async (id) => {
-    try {
-      await axios.post(
-        `http://localhost:8080/api/connect/accept/${id}`,
-        {},
-        axiosConfig
-      );
-      setReceivedRequests((prev) => prev.filter((req) => req.id !== id));
-      setError(null);
-    } catch (err) {
-      console.error("Accept request failed:", err);
-      setError("Failed to accept request.");
-    }
+  const handleReject = async (id) => {
+    await axios.post(`http://localhost:8080/api/connect/reject/${id}`, {}, axiosConfig);
+    setReceivedRequests((p) => p.filter((r) => r.id !== id));
   };
-
-  const handleRejectRequest = async (id) => {
-    try {
-      await axios.post(
-        `http://localhost:8080/api/connect/reject/${id}`,
-        {},
-        axiosConfig
-      );
-      setReceivedRequests((prev) => prev.filter((req) => req.id !== id));
-    } catch (err) {
-      console.error("Reject request failed:", err);
-      setError("Failed to reject request.");
-    }
+  const handleDelete = async (id) => {
+    await axios.delete(`http://localhost:8080/api/connect/${id}`, axiosConfig);
+    setSentPending((p) => p.filter((r) => r.id !== id));
   };
+  const handleLogout = () => { logout(); navigate("/login"); };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+  if (loading) return (
+    <Box sx={{ display: "flex", height: "100vh", background: T.bg }}>
+      <AppSidebar />
+      <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", ml: "72px" }}>
+        <CircularProgress sx={{ color: T.primary }} />
+      </Box>
+    </Box>
+  );
 
-  if (!user || !profile || loading) {
-    return (
-      <Container>
-        <MainContent>
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-            <CircularProgress size={32} sx={{ color: colors.accent }} />
+  // Admin profile view
+  if (isAdmin) return (
+    <Box sx={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: T.font }}>
+      <AppSidebar />
+      <Box sx={{ flex: 1, ml: "72px", p: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, borderRadius: "20px", p: 5, textAlign: "center", maxWidth: 400 }}>
+          <Box sx={{ width: 72, height: 72, borderRadius: "16px", background: T.gradientBlue, display: "flex", alignItems: "center", justifyContent: "center", mx: "auto", mb: 3, boxShadow: "0 4px 20px rgba(37,99,235,0.4)" }}>
+            <Typography sx={{ fontSize: 32 }}>🛡️</Typography>
           </Box>
-        </MainContent>
-        <Sidebar>
-          <ProfileButton onClick={() => navigate("/home")} aria-label="Go to home">
-            <ArrowForwardIcon />
-          </ProfileButton>
-        </Sidebar>
-      </Container>
-    );
-  }
+          <Typography variant="h5" sx={{ color: T.textPrimary, fontWeight: 800, mb: 1 }}>Admin Account</Typography>
+          <Typography sx={{ color: T.textSecondary, mb: 3 }}>{user?.email}</Typography>
+          <Button onClick={handleLogout}
+            sx={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 3, "&:hover": { background: "rgba(239,68,68,0.25)" } }}>
+            Logout
+          </Button>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  const skillList = profile?.skills?.split(",").filter(Boolean) || [];
 
   return (
-    <Container>
-      <MainContent>
-        <Box sx={{ width: "100%" }}>
-          {/* Profile Info */}
-          <ProfileCard elevation={0}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-              <Box sx={{ display: "flex", alignItems: "center", flex: 1, minWidth: 0 }}>
-                <GradientAvatar>
-                  <PersonIcon sx={{ fontSize: 40 }} />
-                </GradientAvatar>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    variant="h5"
-                    fontWeight={600}
-                    fontFamily="'Inter', 'Poppins', sans-serif"
-                    sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  >
-                    {user.firstName} {user.lastName}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color={colors.muted}
-                    fontFamily="'Inter', 'Poppins', sans-serif"
-                    sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  >
-                    {user.email}
-                  </Typography>
-                </Box>
-                <IconButton onClick={handleEditOpen} sx={{ color: colors.accent }}>
-                  <EditIcon />
-                </IconButton>
-              </Box>
+    <Box sx={{ display: "flex", minHeight: "100vh", background: T.bg, fontFamily: T.font }}>
+      <AppSidebar />
+      <Box sx={{ flex: 1, ml: "72px", overflowY: "auto", p: 4,
+        "&::-webkit-scrollbar": { width: 4 },
+        "&::-webkit-scrollbar-thumb": { background: "rgba(255,255,255,0.1)", borderRadius: 4 },
+      }}>
+        <motion.div variants={pageVariants} initial="initial" animate="animate">
+
+          {/* Cover + Avatar */}
+          <Box sx={{ position: "relative", mb: 8 }}>
+            <Box sx={{ height: 160, borderRadius: "20px", background: "linear-gradient(135deg, #0f2460 0%, #1e3a8a 50%, #1d4ed8 100%)", overflow: "hidden", position: "relative" }}>
+              <Box sx={{ position: "absolute", inset: 0, background: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
             </Box>
-            {user.userType === "ALUMNI" ? (
-              <>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>Industry:</strong> {profile.industry || "Not specified"}
-                </Typography>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>Skills:</strong> {profile.skills || "Not specified"}
-                </Typography>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>LinkedIn:</strong> {profile.linkedinUrl || "Not specified"}
-                </Typography>
-              </>
-            ) : (
-              <>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>Department:</strong> {profile.department || "Not specified"}
-                </Typography>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>Year of Joining:</strong> {profile.yearOfJoining || "Not specified"}
-                </Typography>
-                <Typography variant="body1" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mb: 1 }}>
-                  <strong>LinkedIn:</strong> {profile.linkedinUrl || "Not specified"}
-                </Typography>
-              </>
-            )}
-            {error && (
-              <Typography color="error" variant="body2" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mt: 2 }}>
-                {error}
+            <Box sx={{ position: "absolute", bottom: -48, left: 32, display: "flex", alignItems: "flex-end", gap: 2 }}>
+              <Avatar sx={{ width: 96, height: 96, fontSize: "2rem", fontWeight: 800, background: getAvatarGradient(user?.firstName), border: "4px solid #0A0F1E", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </Avatar>
+            </Box>
+            <Box sx={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 1 }}>
+              <Button startIcon={<EditIcon />} onClick={() => setEditOpen(true)}
+                sx={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", color: "#fff", borderRadius: "10px", textTransform: "none", fontWeight: 600, fontSize: "0.8rem", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { background: "rgba(255,255,255,0.25)" } }}>
+                Edit
+              </Button>
+              <Button startIcon={<LogoutIcon />} onClick={handleLogout}
+                sx={{ background: "rgba(239,68,68,0.2)", backdropFilter: "blur(10px)", color: "#FCA5A5", borderRadius: "10px", textTransform: "none", fontWeight: 600, fontSize: "0.8rem", border: "1px solid rgba(239,68,68,0.3)", "&:hover": { background: "rgba(239,68,68,0.3)" } }}>
+                Logout
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Name + Info */}
+          <Box sx={{ mb: 4 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+              <Typography variant="h4" sx={{ color: T.textPrimary, fontWeight: 800 }}>
+                {user?.firstName} {user?.lastName}
               </Typography>
+              {profile?.isVerified && <VerifiedIcon sx={{ color: T.primary, fontSize: 22 }} />}
+            </Box>
+            <Typography sx={{ color: T.textSecondary, fontSize: "0.95rem", mb: 1 }}>
+              {user?.userType === "ALUMNI" ? `${profile?.industry || "Alumni"} · Class of ${profile?.graduationYear || ""}` : `${profile?.department || "Student"} · Batch ${profile?.yearOfJoining || ""}`}
+            </Typography>
+            <Typography sx={{ color: T.textMuted, fontSize: "0.875rem" }}>{user?.email}</Typography>
+            {profile?.linkedinUrl && (
+              <Box display="flex" alignItems="center" gap={0.5} mt={1}>
+                <LinkedInIcon sx={{ color: "#0A66C2", fontSize: 18 }} />
+                <Typography component="a" href={profile.linkedinUrl} target="_blank" sx={{ color: "#60A5FA", fontSize: "0.85rem", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
+                  LinkedIn Profile
+                </Typography>
+              </Box>
             )}
-            <LogoutButton sx={{ mt: 2 }} onClick={handleLogout}>
-              Logout
-            </LogoutButton>
-          </ProfileCard>
+          </Box>
 
-          {/* Received and Pending Connections Side by Side */}
-          <RequestsContainer>
-            <RequestCard elevation={0}>
-              <SectionTitle variant="h6">
-                <ConnectIcon sx={{ color: colors.accent }} />
-                Received Requests
-              </SectionTitle>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
+            {/* About */}
+            {user?.userType === "ALUMNI" && profile?.bio && (
+              <GlassCard sx={{ gridColumn: "1 / -1" }}>
+                <SLabel>About</SLabel>
+                <Typography sx={{ color: T.textPrimary, lineHeight: 1.7, fontSize: "0.9rem" }}>{profile.bio}</Typography>
+              </GlassCard>
+            )}
+
+            {/* Skills */}
+            {skillList.length > 0 && (
+              <GlassCard>
+                <SLabel>Skills</SLabel>
+                <Box display="flex" flexWrap="wrap" gap={0.75}>
+                  {skillList.map((s) => (
+                    <Chip key={s} label={s.trim()} size="small"
+                      sx={{ background: "rgba(37,99,235,0.15)", color: "#93C5FD", border: "1px solid rgba(37,99,235,0.3)", fontSize: "0.78rem" }} />
+                  ))}
+                </Box>
+              </GlassCard>
+            )}
+
+            {/* Received Requests */}
+            <GlassCard>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <ConnectIcon sx={{ color: T.primary, fontSize: 20 }} />
+                <SLabel>Received Requests</SLabel>
+                {receivedRequests.length > 0 && (
+                  <Chip label={receivedRequests.length} size="small" sx={{ background: T.primary, color: "#fff", fontSize: "0.7rem", height: 18, ml: "auto" }} />
+                )}
+              </Box>
               {receivedRequests.length === 0 ? (
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif">
-                  No received requests.
-                </Typography>
+                <Typography sx={{ color: T.textMuted, fontSize: "0.85rem" }}>No pending requests.</Typography>
               ) : (
-                <List>
+                <motion.div variants={listVariants} initial="initial" animate="animate">
                   {receivedRequests.map((req) => (
-                    <ListItemStyled key={req.id}>
-                      <ListItemText
-                        primary={`${req.sender.firstName} ${req.sender.lastName}`}
-                        secondary="Pending"
-                        primaryTypographyProps={{ fontWeight: 600, fontFamily: "'Inter', 'Poppins', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        secondaryTypographyProps={{ color: colors.muted, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                      />
-                      <ListItemSecondaryAction>
-                        <ActionButton
-                          size="small"
-                          sx={{ mr: 1 }}
-                          onClick={() => handleAcceptRequest(req.id)}
-                        >
-                          Accept
-                        </ActionButton>
-                        <RejectButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() => handleRejectRequest(req.id)}
-                        >
-                          Reject
-                        </RejectButton>
-                      </ListItemSecondaryAction>
-                    </ListItemStyled>
+                    <motion.div key={req.id} variants={itemVariants}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.5, borderBottom: `1px solid ${T.border}` }}>
+                        <Box>
+                          <Typography sx={{ color: T.textPrimary, fontWeight: 600, fontSize: "0.875rem" }}>{req.sender.firstName} {req.sender.lastName}</Typography>
+                          <Typography sx={{ color: T.textMuted, fontSize: "0.75rem" }}>Wants to connect</Typography>
+                        </Box>
+                        <Box display="flex" gap={1}>
+                          <Button size="small" onClick={() => handleAccept(req.id)}
+                            sx={{ background: T.successSoft, color: T.success, borderRadius: "8px", textTransform: "none", fontWeight: 600, fontSize: "0.75rem", "&:hover": { background: "rgba(16,185,129,0.25)" } }}>
+                            Accept
+                          </Button>
+                          <Button size="small" onClick={() => handleReject(req.id)}
+                            sx={{ background: T.dangerSoft, color: T.danger, borderRadius: "8px", textTransform: "none", fontWeight: 600, fontSize: "0.75rem", "&:hover": { background: "rgba(239,68,68,0.25)" } }}>
+                            Reject
+                          </Button>
+                        </Box>
+                      </Box>
+                    </motion.div>
                   ))}
-                </List>
+                </motion.div>
               )}
-            </RequestCard>
+            </GlassCard>
 
-            <RequestCard elevation={0}>
-              <SectionTitle variant="h6">
-                <PendingIcon sx={{ color: colors.accent }} />
-                Pending Connections
-              </SectionTitle>
+            {/* Sent Pending */}
+            <GlassCard>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <PendingIcon sx={{ color: T.warning, fontSize: 20 }} />
+                <SLabel>Pending Sent</SLabel>
+              </Box>
               {sentPending.length === 0 ? (
-                <Typography variant="body2" color={colors.muted} fontFamily="'Inter', 'Poppins', sans-serif">
-                  No pending connections.
-                </Typography>
+                <Typography sx={{ color: T.textMuted, fontSize: "0.85rem" }}>No pending requests.</Typography>
               ) : (
-                <List>
+                <motion.div variants={listVariants} initial="initial" animate="animate">
                   {sentPending.map((req) => (
-                    <ListItemStyled key={req.id}>
-                      <ListItemText
-                        primary={`${req.receiver.firstName} ${req.receiver.lastName}`}
-                        secondary="Pending"
-                        primaryTypographyProps={{ fontWeight: 600, fontFamily: "'Inter', 'Poppins', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        secondaryTypographyProps={{ color: colors.muted, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          edge="end"
-                          onClick={() => handleDeletePending(req.id)}
-                          sx={{ color: colors.warning }}
-                        >
-                          <DeleteIcon />
+                    <motion.div key={req.id} variants={itemVariants}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 1.5, borderBottom: `1px solid ${T.border}` }}>
+                        <Box>
+                          <Typography sx={{ color: T.textPrimary, fontWeight: 600, fontSize: "0.875rem" }}>{req.receiver.firstName} {req.receiver.lastName}</Typography>
+                          <Chip label="Pending" size="small" sx={{ background: T.warningSoft, color: T.warning, fontSize: "0.68rem", height: 18, mt: 0.5 }} />
+                        </Box>
+                        <IconButton size="small" onClick={() => handleDelete(req.id)} sx={{ color: T.danger, "&:hover": { background: T.dangerSoft } }}>
+                          <DeleteIcon sx={{ fontSize: 18 }} />
                         </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItemStyled>
+                      </Box>
+                    </motion.div>
                   ))}
-                </List>
+                </motion.div>
               )}
-            </RequestCard>
-          </RequestsContainer>
-        </Box>
-      </MainContent>
+            </GlassCard>
+          </Box>
 
-      {/* Sidebar */}
-      <Sidebar>
-        <ProfileButton onClick={() => navigate("/home")} aria-label="Go to home">
-          <ArrowForwardIcon />
-        </ProfileButton>
-      </Sidebar>
+          {error && <Typography sx={{ color: T.danger, mt: 2, fontSize: "0.85rem" }}>{error}</Typography>}
+        </motion.div>
+      </Box>
 
       {/* Edit Dialog */}
-      <ProfileDialog
-        open={editOpen}
-        onClose={handleEditClose}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogHeader>
-          <IconButton
-            onClick={handleEditClose}
-            sx={{ color: colors.white, mr: 1 }}
-          >
-            <ArrowForwardIcon />
-          </IconButton>
-          Edit Profile
-        </DialogHeader>
-        <DialogContent sx={{ p: "24px", background: colors.secondary }}>
-          {user.userType === "ALUMNI" ? (
-            <>
-              <StyledTextField
-                autoFocus
-                label="Industry"
-                fullWidth
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-              />
-              <StyledTextField
-                label="Skills"
-                fullWidth
-                value={skills}
-                onChange={(e) => setSkills(e.target.value)}
-              />
-              <StyledTextField
-                label="LinkedIn URL"
-                fullWidth
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-              />
-            </>
-          ) : (
-            <>
-              <StyledTextField
-                autoFocus
-                label="Department"
-                fullWidth
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-              />
-              <StyledTextField
-                label="Year of Joining"
-                type="number"
-                fullWidth
-                value={yearOfJoining}
-                onChange={(e) => setYearOfJoining(e.target.value)}
-              />
-              <StyledTextField
-                label="LinkedIn URL"
-                fullWidth
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-              />
-            </>
-          )}
-          {error && (
-            <Typography color="error" variant="body2" fontFamily="'Inter', 'Poppins', sans-serif" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm"
+        PaperProps={{ sx: { background: "#0F1629", border: `1px solid ${T.border}`, borderRadius: "20px" } }}>
+        <DialogTitle sx={{ background: T.gradientBlue, color: "#fff", fontWeight: 700 }}>Edit Profile</DialogTitle>
+        <DialogContent sx={{ pt: "20px !important", background: "#0F1629" }}>
+          {[
+            ...(user?.userType === "ALUMNI"
+              ? [{ label: "Industry", value: industry, set: setIndustry }, { label: "Skills (comma-separated)", value: skills, set: setSkills }]
+              : [{ label: "Department", value: department, set: setDepartment }, { label: "Year of Joining", value: yearOfJoining, set: setYearOfJoining, type: "number" }]),
+            { label: "LinkedIn URL", value: linkedinUrl, set: setLinkedinUrl },
+          ].map(({ label, value, set, type }) => (
+            <TextField key={label} fullWidth label={label} type={type || "text"} value={value} onChange={(e) => set(e.target.value)}
+              sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: "12px", color: T.textPrimary, "& fieldset": { borderColor: T.border }, "&:hover fieldset": { borderColor: T.borderHover }, "&.Mui-focused fieldset": { borderColor: T.primary } }, "& .MuiInputLabel-root": { color: T.textSecondary }, "& .MuiInputLabel-root.Mui-focused": { color: T.primary } }}
+              InputProps={{ style: { color: T.textPrimary } }}
+            />
+          ))}
+          {error && <Typography sx={{ color: T.danger, fontSize: "0.85rem" }}>{error}</Typography>}
         </DialogContent>
-        <DialogActions sx={{ p: "16px 24px" }}>
-          <Button
-            onClick={handleEditClose}
-            sx={{ color: colors.muted, fontFamily: "'Inter', 'Poppins', sans-serif" }}
-          >
-            Cancel
+        <DialogActions sx={{ p: 2, background: "#0F1629" }}>
+          <Button onClick={() => setEditOpen(false)} sx={{ color: T.textSecondary, textTransform: "none" }}>Cancel</Button>
+          <Button onClick={handleUpdate} sx={{ background: T.primary, color: "#fff", borderRadius: "10px", textTransform: "none", fontWeight: 600, "&:hover": { background: T.primaryHover } }}>
+            Save Changes
           </Button>
-          <ActionButton onClick={handleUpdate}>
-            Save
-          </ActionButton>
         </DialogActions>
-      </ProfileDialog>
-    </Container>
+      </Dialog>
+    </Box>
   );
 }
