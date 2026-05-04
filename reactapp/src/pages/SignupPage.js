@@ -53,10 +53,15 @@ function SignupPage() {
       return;
     }
     try {
-      await AuthService.signup(formData);  // Calls API with form data
+      const payload = {
+        ...formData,
+        graduationYear: formData.graduationYear ? parseInt(formData.graduationYear) : null,
+        yearOfJoining: formData.yearOfJoining ? parseInt(formData.yearOfJoining) : null,
+      };
+      await AuthService.signup(payload);  // Calls API with form data
       navigate('/login');  // Redirects to login on success
     } catch (err) {
-      setError(err.message);  // Sets error from API
+      setError(err.response?.data || err.message);  // Sets error from API
     }
   };
 

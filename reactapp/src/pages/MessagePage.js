@@ -17,8 +17,8 @@ import { motion } from "framer-motion";
 
 // --- Color Palette (same as HomePage and ProfilePage, with beige for header) ---
 const colors = {
-  primary: "#2a2d32ff",
-  primaryLight: "#8594a4ff",
+  primary: "#0d3169ff",
+  primaryLight: "#4f7aa9ff",
   secondary: "#f5f7faff",
   accent: "#00d4b8ff",
   accentLight: "#e6fffcff",
@@ -29,7 +29,7 @@ const colors = {
   lightGray: "#e2e8f0ff",
   shadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
   shadowHover: "0 6px 24px rgba(0, 0, 0, 0.12)",
-  beige: "#f5f5dcff", // Light beige for header
+  beige: "#6a1cc4ff", // Light beige for header
 };
 
 // --- Styled Components ---
@@ -162,7 +162,7 @@ const MessagePage = ({ connection, onBack, token, currentUserId }) => {
     };
 
     fetchMessages();
-    const interval = setInterval(fetchMessages, 2000);
+    const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [connection, token]);
 

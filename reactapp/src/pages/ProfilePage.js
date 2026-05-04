@@ -33,8 +33,8 @@ import { useNavigate } from "react-router-dom";
 
 // --- Color Palette (same as HomePage) ---
 const colors = {
-  primary: "#2a2d32ff",
-  primaryLight: "#8594a4ff",
+  primary: "#032e74ff", // Dark slate for primary elements
+  primaryLight: "#4d8ed4ff",
   secondary: "#f5f7faff",
   accent: "#00d4b8ff",
   accentLight: "#e6fffcff",
@@ -322,6 +322,7 @@ export default function ProfilePage() {
     fetchProfile();
     fetchReceivedRequests();
     fetchSentPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profileApi, user?.userType]);
 
   const handleEditOpen = () => setEditOpen(true);

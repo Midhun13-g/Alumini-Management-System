@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -24,11 +24,6 @@ import {
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
   Message as MessageIcon,
-  Home as HomeIcon,
-  Email as EmailIcon,
-  Work as WorkIcon,
-  Psychology as SkillsIcon,
-  Info as InfoIcon,
   School as SchoolIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
@@ -38,14 +33,14 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // --- Updated Color Palette ---
 const colors = {
-  primary: "#2a2d32ff", // Dark slate for primary elements
-  primaryLight: "#8594a4ff", // Light slate for secondary elements
+  primary: "#032e74ff", // Dark slate for primary elements
+  primaryLight: "#4d8ed4ff", // Light slate for secondary elements
   secondary: "#f5f7faff", // Light neutral for backgrounds
   accent: "#00d4b8ff", // Vibrant teal for highlights
   accentLight: "#e6fffcff", // Light teal for hover states
   success: "#22c55eff", // Green for success states
   warning: "#f59e0bff", // Amber for warnings
-  muted: "#94a3b8ff", // Softer slate for secondary text
+  muted: "#a1bfe8ff", // Softer slate for secondary text
   white: "#ffffff",
   lightGray: "#e2e8f0ff", // Light gray for subtle backgrounds
   shadow: "0 4px 16px rgba(0, 0, 0, 0.08)",
@@ -109,7 +104,7 @@ const WelcomeSection = styled(motion.div)({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  backgroundImage: `url(/bg2.jpg)`,
+  backgroundImage: `url(/background.png)`,
   backgroundSize: "cover",
   backgroundPosition: "center",
   color: colors.white,
@@ -323,12 +318,6 @@ const InfoSection = styled(Box)({
 });
 
 // --- Animation Variants ---
-const sidebarVariants = {
-  initial: { x: -80 },
-  animate: { x: 0, transition: { duration: 0.4, ease: "easeOut" } },
-  exit: { x: -80, transition: { duration: 0.4, ease: "easeIn" } },
-};
-
 const chatListVariants = {
   initial: { opacity: 0, x: -20 },
   animate: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
@@ -381,58 +370,52 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchConnections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // 🔹 Search Alumni with improved connection status logic
-  const handleSearch = async (e) => {
+  // 🔹 Search Alumni with debounce
+  const searchTimerRef = useRef(null);
+
+  const handleSearch = (e) => {
     const q = e.target.value;
     setSearch(q);
-    
+
     if (q.length === 0) {
       setShowResults(false);
       setResults([]);
       return;
     }
-    
+
     setShowResults(true);
-    
     if (q.length < 2) return;
-    
-    setLoading(true);
 
-    try {
-      const res = await axios.get("http://localhost:8080/api/alumni/search", {
-        params: { q },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get("http://localhost:8080/api/alumni/search", {
+          params: { q },
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      let filtered = res.data.filter((a) => a.user.id !== user.userId);
+        const merged = res.data
+          .filter((a) => a.user.id !== user.userId)
+          .map((a) => {
+            const conn = connections.find(
+              (c) =>
+                (c.sender.id === user.userId && c.receiver.id === a.user.id) ||
+                (c.receiver.id === user.userId && c.sender.id === a.user.id)
+            );
+            return { ...a, connectionStatus: conn?.status || "NONE", connectionId: conn?.id };
+          });
 
-      const merged = filtered.map((a) => {
-        const conn = connections.find(
-          (c) =>
-            (c.sender.id === user.userId && c.receiver.id === a.user.id) ||
-            (c.receiver.id === user.userId && c.sender.id === a.user.id)
-        );
-        
-        let connectionStatus = "NONE";
-        if (conn) {
-          connectionStatus = conn.status;
-        }
-        
-        return {
-          ...a,
-          connectionStatus,
-          connectionId: conn?.id,
-        };
-      });
-
-      setResults(merged);
-    } catch (err) {
-      console.error("Error searching alumni:", err);
-    } finally {
-      setLoading(false);
-    }
+        setResults(merged);
+      } catch (err) {
+        console.error("Error searching alumni:", err);
+      } finally {
+        setLoading(false);
+      }
+    }, 400);
   };
 
   // 🔹 Open profile dialog from search results
@@ -820,7 +803,7 @@ export default function HomePage() {
             animate={{ scale: 1, rotate: 0 }}
             transition={{ duration: 0.6, type: "spring", stiffness: 120 }}
           >
-            {/* <SchoolIcon sx={{ fontSize: 72, color: colors.white }} /> */}
+            <SchoolIcon sx={{ fontSize: 72, color: colors.white }} />
           </motion.div>
           <Typography
             variant="h3"
@@ -829,16 +812,7 @@ export default function HomePage() {
             fontFamily="'Playfair Display', 'Giaza', serif"
             sx={{ letterSpacing: "-0.5px", lineHeight: 1.1 }}
           >
-            Allur'em
-          </Typography>
-          <Typography
-            variant="h6"
-            fontWeight={500}
-            color={colors.white}
-            fontFamily="'Playfair Display', 'Giaza', serif"
-            sx={{ letterSpacing: "-0.25px", lineHeight: 1.2 }}
-          >
-            Connect with your alumni network
+            Allumni Network
           </Typography>
           <Typography
             variant="body1"

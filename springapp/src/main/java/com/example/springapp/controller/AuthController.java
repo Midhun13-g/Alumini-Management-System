@@ -22,12 +22,12 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/signup")  // Handles POST requests to /api/auth/signup
-    public ResponseEntity<UserDTO> signup(@RequestBody SignupRequestDTO request) {
+    public ResponseEntity<?> signup(@RequestBody SignupRequestDTO request) {
         try {
             UserDTO userDTO = userService.signup(request);  // Calls service to process signup
             return ResponseEntity.ok(userDTO);  // Returns 200 OK with UserDTO
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null);  // Returns 400 Bad Request on error
+            return ResponseEntity.badRequest().body(e.getMessage());  // Returns 400 with error message
         }
     }
     @Autowired private UserRepository userRepository;
