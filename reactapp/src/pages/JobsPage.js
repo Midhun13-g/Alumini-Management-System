@@ -4,7 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemText, Divider,
 } from "@mui/material";
 import { Work as WorkIcon, Business as BizIcon, Add as AddIcon, Send as ApplyIcon } from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { jobsAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";

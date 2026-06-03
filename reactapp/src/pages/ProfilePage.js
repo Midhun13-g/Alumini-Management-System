@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Box, Typography, Avatar, Button, Dialog, DialogActions, DialogContent,
-  DialogTitle, TextField, List, ListItem, ListItemText, IconButton,
-  Chip, CircularProgress, Divider,
+  DialogTitle, TextField, IconButton,
+  Chip, CircularProgress,
 } from "@mui/material";
 import {
-  Edit as EditIcon, Delete as DeleteIcon, ArrowForward as ArrowForwardIcon,
+  Edit as EditIcon, Delete as DeleteIcon,
   ConnectWithoutContact as ConnectIcon, HourglassEmpty as PendingIcon,
   Logout as LogoutIcon, LinkedIn as LinkedInIcon, Verified as VerifiedIcon,
 } from "@mui/icons-material";

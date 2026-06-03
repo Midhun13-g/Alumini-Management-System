@@ -3,7 +3,7 @@ import {
   Box, Typography, Button, Chip, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from "@mui/material";
-import { Event as EventIcon, LocationOn as LocationIcon, Add as AddIcon, CheckCircle as CheckIcon } from "@mui/icons-material";
+import { LocationOn as LocationIcon, Add as AddIcon, CheckCircle as CheckIcon } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { eventsAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";

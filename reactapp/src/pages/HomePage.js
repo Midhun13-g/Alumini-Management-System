@@ -6,7 +6,7 @@ import {
   IconButton, Chip, CircularProgress, Divider, Skeleton,
 } from "@mui/material";
 import {
-  Search as SearchIcon, Person as PersonIcon, ArrowBack as ArrowBackIcon,
+  Search as SearchIcon, ArrowBack as ArrowBackIcon,
   Chat as MessageIcon, School as SchoolIcon, Psychology as MentorIcon,
   Verified as VerifiedIcon, Close as CloseIcon,
 } from "@mui/icons-material";
@@ -16,7 +16,7 @@ import MessagePage from "./MessagePage";
 import { motion, AnimatePresence } from "framer-motion";
 import { mentorshipAPI } from "../services/api";
 import AppSidebar from "../components/AppSidebar";
-import { T, glass, pageVariants, listVariants, itemVariants } from "../theme";
+import { T, pageVariants, listVariants, itemVariants } from "../theme";
 
 const avatarColors = [
   "linear-gradient(135deg,#1e3a8a,#2563EB)",
@@ -103,7 +103,7 @@ export default function HomePage() {
       });
       setConnectionProfile(res.data);
     } catch (err) { console.error(err); }
-  };
+  }; // eslint-disable-line no-unused-vars
 
   const handleConnect = async (id, e) => {
     e.stopPropagation();
