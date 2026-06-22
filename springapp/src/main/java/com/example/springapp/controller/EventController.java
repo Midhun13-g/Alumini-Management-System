@@ -4,7 +4,6 @@ import com.example.springapp.dto.EventDTO;
 import com.example.springapp.entity.Event;
 import com.example.springapp.entity.EventRegistration;
 import com.example.springapp.service.EventService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,10 +11,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
-@RequiredArgsConstructor
 public class EventController {
 
     private final EventService eventService;
+
+    public EventController(EventService eventService) {
+        this.eventService = eventService;
+    }
 
     @PostMapping
     public ResponseEntity<Event> createEvent(@RequestBody EventDTO dto) {

@@ -3,8 +3,11 @@ package com.example.springapp.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.Map;
@@ -12,12 +15,14 @@ import java.util.Map;
 @Component
 public class JwtTokenProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
+
     // In production, load from env/secret manager
     private final String JWT_SECRET = "super-secret-change-me-super-secret-change-me"; // >= 32 chars
     private final long JWT_EXPIRATION_MS = 1000L * 60 * 60 * 24; // 24 hours
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+        return Keys.hmacShaKeyFor(JWT_SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(Long userId, String email, String userType, String role) {
@@ -42,7 +47,7 @@ public class JwtTokenProvider {
         Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
         return true;
     } catch (JwtException | IllegalArgumentException e) {
-        System.out.println("JWT validation failed: " + e.getMessage());
+        log.warn("JWT validation failed: {}", e.getMessage());
         return false;
     }
 }

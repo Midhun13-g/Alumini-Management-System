@@ -5,18 +5,21 @@ import com.example.springapp.entity.Status;
 import com.example.springapp.entity.User;
 import com.example.springapp.repository.MentorshipRepository;
 import com.example.springapp.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class MentorshipService {
 
     private final MentorshipRepository mentorshipRepo;
     private final UserRepository userRepo;
+
+    public MentorshipService(MentorshipRepository mentorshipRepo, UserRepository userRepo) {
+        this.mentorshipRepo = mentorshipRepo;
+        this.userRepo = userRepo;
+    }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -27,13 +30,10 @@ public class MentorshipService {
         User student = getCurrentUser();
         if (!"STUDENT".equals(student.getUserType()))
             throw new IllegalStateException("Only students can request mentorship");
-
         User alumni = userRepo.findById(alumniId)
                 .orElseThrow(() -> new RuntimeException("Alumni not found"));
-
         mentorshipRepo.findByStudent_IdAndAlumni_Id(student.getId(), alumniId)
                 .ifPresent(r -> { throw new IllegalStateException("Request already sent"); });
-
         MentorshipRequest req = new MentorshipRequest();
         req.setStudent(student);
         req.setAlumni(alumni);
@@ -42,13 +42,11 @@ public class MentorshipService {
     }
 
     public List<MentorshipRequest> getReceived() {
-        User me = getCurrentUser();
-        return mentorshipRepo.findByAlumni_Id(me.getId());
+        return mentorshipRepo.findByAlumni_Id(getCurrentUser().getId());
     }
 
     public List<MentorshipRequest> getSent() {
-        User me = getCurrentUser();
-        return mentorshipRepo.findByStudent_Id(me.getId());
+        return mentorshipRepo.findByStudent_Id(getCurrentUser().getId());
     }
 
     public MentorshipRequest accept(Long id) {

@@ -1,37 +1,55 @@
 package com.example.springapp.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
 @Entity
-@Table(name = "users")  // Maps this class to 'users' table in DB
-@Data  // Lombok annotation: auto-generates getters, setters, toString, equals, hashCode
+@Table(name = "users")
 public class User {
-    @Id  // Primary key
-    @GeneratedValue(strategy = GenerationType.IDENTITY)  // Auto-increment ID
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)  // Email must be unique and not null
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)  // Password is required, will be hashed
+    @Column(nullable = false)
     private String password;
 
-    @Column(name = "first_name", nullable = false)  // First name required
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)  // Last name required
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "user_type", nullable = false)  // User type: "ALUMNI" or "STUDENT"
+    @Column(name = "user_type", nullable = false)
     private String userType;
 
-    @Column(name = "profile_picture_url")  // Optional URL for profile picture
+    @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
-    @Column(name = "is_active")  // Defaults to true, indicates if account is active
+    @Column(name = "is_active")
     private boolean isActive = true;
 
     @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'USER'")
-    private String role = "USER"; // ADMIN or USER
+    private String role = "USER";
+
+    public Long getId() { return id; }
+    public String getEmail() { return email; }
+    public String getPassword() { return password; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getUserType() { return userType; }
+    public String getRole() { return role; }
+    public boolean isActive() { return isActive; }
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setEmail(String email) { this.email = email; }
+    public void setPassword(String password) { this.password = password; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setUserType(String userType) { this.userType = userType; }
+    public void setRole(String role) { this.role = role; }
+    public void setActive(boolean active) { this.isActive = active; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

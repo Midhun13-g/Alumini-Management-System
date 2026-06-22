@@ -8,19 +8,24 @@ import com.example.springapp.entity.User;
 import com.example.springapp.repository.JobApplicationRepository;
 import com.example.springapp.repository.JobPostRepository;
 import com.example.springapp.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class JobService {
 
     private final JobPostRepository jobPostRepo;
     private final JobApplicationRepository jobApplicationRepo;
     private final UserRepository userRepo;
+
+    public JobService(JobPostRepository jobPostRepo, JobApplicationRepository jobApplicationRepo,
+                      UserRepository userRepo) {
+        this.jobPostRepo = jobPostRepo;
+        this.jobApplicationRepo = jobApplicationRepo;
+        this.userRepo = userRepo;
+    }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -45,8 +50,7 @@ public class JobService {
     }
 
     public List<JobPost> getMyJobs() {
-        User me = getCurrentUser();
-        return jobPostRepo.findByPostedBy_Id(me.getId());
+        return jobPostRepo.findByPostedBy_Id(getCurrentUser().getId());
     }
 
     public JobApplication applyToJob(Long jobId, String resumeLink) {
@@ -61,13 +65,12 @@ public class JobService {
         app.setJob(job);
         app.setStudent(me);
         app.setResumeLink(resumeLink);
+        app.setStatus(Status.PENDING);
         return jobApplicationRepo.save(app);
     }
 
     public List<JobApplication> getApplicationsForMyJobs() {
-        User me = getCurrentUser();
-        List<JobPost> myJobs = jobPostRepo.findByPostedBy_Id(me.getId());
-        return myJobs.stream()
+        return jobPostRepo.findByPostedBy_Id(getCurrentUser().getId()).stream()
                 .flatMap(j -> jobApplicationRepo.findByJob_Id(j.getId()).stream())
                 .toList();
     }

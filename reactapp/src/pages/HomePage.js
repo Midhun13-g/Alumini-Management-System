@@ -103,7 +103,7 @@ export default function HomePage() {
       });
       setConnectionProfile(res.data);
     } catch (err) { console.error(err); }
-  }; // eslint-disable-line no-unused-vars
+  };
 
   const handleConnect = async (id, e) => {
     e.stopPropagation();
@@ -236,7 +236,7 @@ export default function HomePage() {
               return (
                 <motion.div key={conn.id} variants={itemVariants}>
                   <Box
-                    onClick={() => setSelectedConnection(conn)}
+                    onClick={() => openConnectionProfile(other.id)}
                     sx={{
                       px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1.5,
                       cursor: "pointer", transition: "all 0.15s",

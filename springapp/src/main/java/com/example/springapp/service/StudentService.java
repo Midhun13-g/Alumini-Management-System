@@ -4,7 +4,6 @@ import com.example.springapp.entity.StudentProfile;
 import com.example.springapp.entity.User;
 import com.example.springapp.repository.StudentProfileRepository;
 import com.example.springapp.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -12,11 +11,13 @@ import java.util.Optional;
 @Service
 public class StudentService {
 
-    @Autowired
-    private StudentProfileRepository studentProfileRepository;
+    private final StudentProfileRepository studentProfileRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    public StudentService(StudentProfileRepository studentProfileRepository, UserRepository userRepository) {
+        this.studentProfileRepository = studentProfileRepository;
+        this.userRepository = userRepository;
+    }
 
     public Optional<StudentProfile> getProfile(String email) {
         User user = userRepository.findByEmail(email)
@@ -27,14 +28,11 @@ public class StudentService {
     public StudentProfile updateProfile(String email, StudentProfile updated) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found: " + email));
-
         StudentProfile profile = studentProfileRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Profile not found for user: " + email));
-
         profile.setDepartment(updated.getDepartment());
         profile.setYearOfJoining(updated.getYearOfJoining());
         profile.setLinkedinUrl(updated.getLinkedinUrl());
-
         return studentProfileRepository.save(profile);
     }
 }

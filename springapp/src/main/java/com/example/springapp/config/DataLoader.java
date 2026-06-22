@@ -2,17 +2,20 @@ package com.example.springapp.config;
 
 import com.example.springapp.entity.*;
 import com.example.springapp.repository.*;
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final UserRepository userRepo;
     private final AlumniProfileRepository alumniProfileRepo;
@@ -26,17 +29,43 @@ public class DataLoader implements CommandLineRunner {
     private final JobApplicationRepository jobAppRepo;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    public DataLoader(UserRepository userRepo, AlumniProfileRepository alumniProfileRepo,
+                      StudentProfileRepository studentProfileRepo, ConnectRepository connectRepo,
+                      MessageRepository messageRepo, MentorshipRepository mentorshipRepo,
+                      EventRepository eventRepo, EventRegistrationRepository eventRegRepo,
+                      JobPostRepository jobPostRepo, JobApplicationRepository jobAppRepo,
+                      BCryptPasswordEncoder passwordEncoder) {
+        this.userRepo = userRepo;
+        this.alumniProfileRepo = alumniProfileRepo;
+        this.studentProfileRepo = studentProfileRepo;
+        this.connectRepo = connectRepo;
+        this.messageRepo = messageRepo;
+        this.mentorshipRepo = mentorshipRepo;
+        this.eventRepo = eventRepo;
+        this.eventRegRepo = eventRegRepo;
+        this.jobPostRepo = jobPostRepo;
+        this.jobAppRepo = jobAppRepo;
+        this.passwordEncoder = passwordEncoder;
+    }
+
     @Override
     public void run(String... args) {
-        // Fix any existing users with null role
+        fixNullRoles();
+        ensureAdminExists();
+        if (userRepo.count() > 2) return;
+        seedData();
+    }
+
+    private void fixNullRoles() {
         userRepo.findAll().forEach(u -> {
             if (u.getRole() == null) {
                 u.setRole("ADMIN".equals(u.getUserType()) ? "ADMIN" : "USER");
                 userRepo.save(u);
             }
         });
+    }
 
-        // Always ensure admin account exists
+    private void ensureAdminExists() {
         if (userRepo.findByEmail("admin@alumni.edu").isEmpty()) {
             User admin = new User();
             admin.setFirstName("Admin"); admin.setLastName("User");
@@ -44,11 +73,11 @@ public class DataLoader implements CommandLineRunner {
             admin.setPassword(passwordEncoder.encode("password123"));
             admin.setUserType("ADMIN"); admin.setActive(true); admin.setRole("ADMIN");
             userRepo.save(admin);
-            System.out.println("✅ Admin user created: admin@alumni.edu / password123");
+            log.info("Admin user created: admin@alumni.edu");
         }
+    }
 
-        if (userRepo.count() > 2) return; // skip full seeding if data already exists
-
+    private void seedData() {
         String pw = passwordEncoder.encode("password123");
 
         // ── Alumni ──────────────────────────────────────────────────────────
@@ -114,7 +143,7 @@ public class DataLoader implements CommandLineRunner {
             p.setYearOfJoining(Integer.parseInt(d[4]));
             p.setStudentId(d[5]);
             p.setStudentName(d[0] + " " + d[1]);
-            p.setLinkedinUrl("https://linkedin.com/in/" + d[0].toLowerCase() + "-" + d[1].toLowerCase());
+            p.setLinkedinUrl("https://linkedin.com/in/" + d[0].toLowerCase(Locale.ROOT) + "-" + d[1].toLowerCase(Locale.ROOT));
             studentProfileRepo.save(p);
             studentUsers.add(u);
         }
@@ -133,7 +162,7 @@ public class DataLoader implements CommandLineRunner {
 
         Set<String> connPairs = new HashSet<>();
         List<ConnectEntity> acceptedConns = new ArrayList<>();
-        Random rnd = new Random(42);
+        SecureRandom rnd = new SecureRandom();
 
         // 20 ACCEPTED
         int accepted = 0;
@@ -263,7 +292,7 @@ public class DataLoader implements CommandLineRunner {
                 er.setUser(studentUsers.get(i % studentUsers.size()));
                 er.setEvent(savedEvents.get(i % savedEvents.size()));
                 eventRegRepo.save(er);
-            } catch (Exception ignored) {}
+            } catch (Exception e) { log.warn("Skipped duplicate event registration: {}", e.getMessage()); }
         }
 
         // ── Jobs ──────────────────────────────────────────────────────────────
@@ -306,6 +335,6 @@ public class DataLoader implements CommandLineRunner {
             jobAppRepo.save(app);
         }
 
-        System.out.println("✅ DataLoader: Seeded alumni, students, connections, messages, mentorship, events, jobs.");
+        log.info("DataLoader: Seeded alumni, students, connections, messages, mentorship, events, jobs.");
     }
 }

@@ -4,35 +4,41 @@ import com.example.springapp.dto.LoginRequestDTO;
 import com.example.springapp.dto.LoginResponseDTO;
 import com.example.springapp.dto.SignupRequestDTO;
 import com.example.springapp.dto.UserDTO;
+import com.example.springapp.entity.User;
 import com.example.springapp.repository.UserRepository;
 import com.example.springapp.security.JwtTokenProvider;
 import com.example.springapp.service.UserService;
-import com.example.springapp.entity.User;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-@RestController  // Marks as REST controller, responses are JSON
-@RequestMapping("/api/auth")  // Base path for auth endpoints
+@RestController
+@RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired  // Injects UserService
-    private UserService userService;
+    private final UserService userService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    @PostMapping("/signup")  // Handles POST requests to /api/auth/signup
+    public AuthController(UserService userService, UserRepository userRepository,
+                          PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider) {
+        this.userService = userService;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
+
+    @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignupRequestDTO request) {
         try {
-            UserDTO userDTO = userService.signup(request);  // Calls service to process signup
-            return ResponseEntity.ok(userDTO);  // Returns 200 OK with UserDTO
+            UserDTO userDTO = userService.signup(request);
+            return ResponseEntity.ok(userDTO);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());  // Returns 400 with error message
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO login) {
@@ -41,13 +47,12 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
-        User user = userOpt.get();
+        User user = userOpt.orElseThrow(() -> new RuntimeException("User not found"));
         if (!user.isActive()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Account disabled");
         }
 
-        boolean matches = passwordEncoder.matches(login.getPassword(), user.getPassword());
-        if (!matches) {
+        if (!passwordEncoder.matches(login.getPassword(), user.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
@@ -65,6 +70,4 @@ public class AuthController {
                 user.getRole()
         ));
     }
-
-    
 }

@@ -2,7 +2,6 @@ package com.example.springapp.controller;
 
 import com.example.springapp.entity.StudentProfile;
 import com.example.springapp.service.StudentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,8 +11,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/student")
 public class StudentController {
 
-    @Autowired
-    private StudentService studentService;
+    private final StudentService studentService;
+
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
+    }
 
     private String getLoggedInEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

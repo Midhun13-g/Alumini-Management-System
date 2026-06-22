@@ -1,12 +1,10 @@
 package com.example.springapp.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "job_posts")
-@Data
 public class JobPost {
 
     @Id
@@ -31,4 +29,20 @@ public class JobPost {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Long getId() { return id; }
+    public String getTitle() { return title; }
+    public String getCompany() { return company; }
+    public String getDescription() { return description; }
+    public String getSkillsRequired() { return skillsRequired; }
+    public User getPostedBy() { return postedBy; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setTitle(String title) { this.title = title; }
+    public void setCompany(String company) { this.company = company; }
+    public void setDescription(String description) { this.description = description; }
+    public void setSkillsRequired(String skillsRequired) { this.skillsRequired = skillsRequired; }
+    public void setPostedBy(User postedBy) { this.postedBy = postedBy; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

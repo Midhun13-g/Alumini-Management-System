@@ -2,7 +2,6 @@ package com.example.springapp.controller;
 
 import com.example.springapp.entity.MentorshipRequest;
 import com.example.springapp.service.MentorshipService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,10 +10,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/mentorship")
-@RequiredArgsConstructor
 public class MentorshipController {
 
     private final MentorshipService mentorshipService;
+
+    public MentorshipController(MentorshipService mentorshipService) {
+        this.mentorshipService = mentorshipService;
+    }
 
     @PostMapping("/request/{alumniId}")
     public ResponseEntity<MentorshipRequest> sendRequest(

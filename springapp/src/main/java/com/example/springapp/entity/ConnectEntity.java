@@ -1,7 +1,6 @@
 package com.example.springapp.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,8 +15,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_connect_status", columnList = "status")
     }
 )
-@Data
 public class ConnectEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,4 +32,16 @@ public class ConnectEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public Long getId() { return id; }
+    public User getSender() { return sender; }
+    public User getReceiver() { return receiver; }
+    public Status getStatus() { return status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setSender(User sender) { this.sender = sender; }
+    public void setReceiver(User receiver) { this.receiver = receiver; }
+    public void setStatus(Status status) { this.status = status; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -4,7 +4,6 @@ import com.example.springapp.dto.JobPostDTO;
 import com.example.springapp.entity.JobApplication;
 import com.example.springapp.entity.JobPost;
 import com.example.springapp.service.JobService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,10 +12,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobs")
-@RequiredArgsConstructor
 public class JobController {
 
     private final JobService jobService;
+
+    public JobController(JobService jobService) {
+        this.jobService = jobService;
+    }
 
     @PostMapping
     public ResponseEntity<JobPost> createJob(@RequestBody JobPostDTO dto) {

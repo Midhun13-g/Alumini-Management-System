@@ -7,19 +7,24 @@ import com.example.springapp.entity.User;
 import com.example.springapp.repository.EventRegistrationRepository;
 import com.example.springapp.repository.EventRepository;
 import com.example.springapp.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class EventService {
 
     private final EventRepository eventRepo;
     private final EventRegistrationRepository registrationRepo;
     private final UserRepository userRepo;
+
+    public EventService(EventRepository eventRepo, EventRegistrationRepository registrationRepo,
+                        UserRepository userRepo) {
+        this.eventRepo = eventRepo;
+        this.registrationRepo = registrationRepo;
+        this.userRepo = userRepo;
+    }
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -54,7 +59,6 @@ public class EventService {
     }
 
     public List<EventRegistration> getMyRegistrations() {
-        User me = getCurrentUser();
-        return registrationRepo.findByUser_Id(me.getId());
+        return registrationRepo.findByUser_Id(getCurrentUser().getId());
     }
 }
